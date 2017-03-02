@@ -1,0 +1,41 @@
+{
+    "name": "ClickHeat",
+    "homepage": "http:\/\/8bitrockr.com\/",
+    "version": "0.1.9",
+    "description": "ClickHeat is a visual heatmap of clicks on a HTML page. This plugin based on Dugwood's ClickHeat version 1.14. Plugin not consider IIS. Sorry.",
+    "theme": true,
+    "keywords": [
+        "clickheat",
+        "heatmap",
+        "dugwood",
+        "piwikjapan",
+        "YAMAMOTO Takashi"
+    ],
+    "require": {
+        "piwik": ">=3.0.1-stable,<4.0.0"
+    },
+    "license": "GPLv3 or later",
+    "authors": [
+        {
+            "name": "Dugwood",
+            "email": "",
+            "homepage": "http:\/\/www.dugwood.com\/clickheat\/index.html"
+        },
+        {
+            "name": "YAMAMOTO Takashi (PiwikJapan)",
+            "email": "yamachan@piwikjapan.org",
+            "homepage": "http:\/\/www.piwikjapan.org\/"
+        },
+        {
+            "name": "Trung Tran",
+            "email": "trungtran07@gmail.com",
+            "homepage": "http:\/\/8bitrockr.com\/"
+        }
+    ],
+    "support": {
+        "email": "yamachan@piwikjapan.org",
+        "irc": "@PiwikJapan"
+    },
+    "stylesheet": "libs/styles/piwik.css",
+    "javascript": ["libs/js/admin.js"]
+}

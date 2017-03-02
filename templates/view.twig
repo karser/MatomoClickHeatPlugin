@@ -1,0 +1,97 @@
+<div id="contenu" class="piwik-form">
+	<span id="cleaner"></span>
+	<form action="{{ clickheat_path }}index.php" method="get" onsubmit="return false;" id="clickForm">
+		<div class="row">
+            <div piwik-field uicontrol="select" name="group"
+                 id="formGroup"
+                 title="{{ 'ClickHeat_LANG_GROUP' | translate }}"
+                 options='{{ clickheat_groups | json_encode }}'
+                 value="{{ clickheat_groups|keys|first }}"
+                 class="col s6 m3"
+                 full-width="true">>
+            </div>
+            <div piwik-field uicontrol="select" name="browser"
+                 id="formBrowser"
+                 title="{{ 'ClickHeat_LANG_BROWSER' | translate }}"
+                 options='{{ clickheat_browsers | json_encode }}'
+                 value='{{ clickheat_browsers|keys|first }}'
+                 class="col s6 m3"
+                 full-width="true">
+            </div>
+            <div piwik-field uicontrol="select" name="screen"
+                 id="formScreen"
+                 title="{{ 'ClickHeat_LANG_SCREENSIZE' | translate }}"
+                 options='{{ clickheat_screens | json_encode }}'
+                 value='{{ clickheat_screens|keys|first }}'
+                 class="col s6 m3"
+                 full-width="true">
+            </div>
+			<div class="col s6 m3">
+                <br>
+                <ul>
+                    {#<li>#}
+                        {#<a href="#" onclick="showGroupLayout(); return false;">#}
+                            {#<span class="icon-table"></span> Layout#}
+                        {#</a>#}
+                    {#</li>#}
+                    <li>
+                        <a href="#" onclick="adminCookie(); return false;">{{ 'ClickHeat_LANG_LOG_MY_CLICKS'|translate }}</a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showJsCode(); return false;">{{ 'ClickHeat_GET_TRACKING_CODE'|translate }}</a>
+                    </li>
+                </ul>
+			</div>
+		</div>
+        <div class="row">
+            <div class="col s12">
+                <a class="btn" href="javascript:" onclick="applyChange();">Apply</a>
+            </div>
+        </div>
+		<div class="row">
+			<div class="col m3">
+                {{ 'ClickHeat_LANG_HEATMAP' | translate }}
+			</div>
+			<div class="col m4">
+				<input type="checkbox" id="formHeatmap" name="heatmap"{{ clickheat_force_heatmap }} onchange="updateHeatmap();" /><span id="alphaSelector"></span>
+			</div>
+		</div>
+	</form>
+</div>
+<div id="divPanel" onmouseover="showPanel();" onclick="hidePanel();"><img src="{{ clickheat_path }}images/arrow-up.png" width="11" height="6" alt="" /></div>
+<div id="layoutDiv"></div>
+<div id="overflowDiv">
+	<div id="pngDiv"></div>
+	<p><iframe src="{{ clickheat_path }}clickempty.html" id="webPageFrame" onload="window.setTimeout('cleanIframe();', 2000);" frameborder="0" scrolling="no" width="50" height="0"></iframe></p>
+</div>
+<script type="text/javascript">
+pleaseWait = '{{ clickheat_loading }}';
+cleanerRunning = '{{ clickheat_cleaner }}';
+isJsOkay = '<a href="#" onclick="showJsCode(); return false;">{{ clickheat_jsokay }}</a>';
+jsAdminCookie = '{{ clickheat_admincookie }}';
+hideIframes = {{ clickheat_iframes }};
+hideFlashes = {{ clickheat_flashes }};
+isPiwikModule = true;
+scriptPath = '{{ clickheat_host }}{{ clickheat_path }}';
+scriptIndexPath = '{{ clickheat_index | raw }}';
+currentDate = [{{ clickheat_day }}, {{ clickheat_month }}, {{ clickheat_year }}, {{ clickheat_day }}, {{ clickheat_month }}, {{ clickheat_year }}];
+currentRange = '{{ clickheat_range }}';
+currentAlpha = {{ clickheat_alpha }};
+weekDays = new Array();
+
+/** Draw the alpha selector */
+drawAlphaSelector('alphaSelector', 30);
+
+setTimeout(function () {
+    /** Resize the main div */
+    resizeDiv();
+
+    /** Load iframe (which will load the heatmap once the info is okay) */
+    loadIframe();
+
+    /** Run cleaner */
+    runCleaner();
+
+    updateHeatmap();
+}, 2000);
+</script>

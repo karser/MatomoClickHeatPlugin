@@ -1,0 +1,25 @@
+<?php
+$clickheatConf = [
+    'logger' => 'Piwik\Plugins\ClickHeat\Logger\MysqlLogger',
+    'logPath'     => PIWIK_INCLUDE_PATH . '/tmp/cache/clickheat/logs/',
+    'cachePath'   => PIWIK_INCLUDE_PATH . '/tmp/cache/clickheat/cache/',
+    'referers'    => false,
+    'groups'      => true,
+    'fileSize'    => 0,
+    'adminLogin'  => '',
+    'adminPass'   => '',
+    'viewerLogin' => '',
+    'viewerPass'  => '',
+    'memory'      => 50,
+    'step'        => 5,
+    'dot'         => 19,
+    'flush'       => 40, //days
+    'start'       => 'm',
+    'palette'     => false,
+    'heatmap'     => true,
+    'hideIframes' => true,
+    'hideFlashes' => true,
+    'yesterday'   => false,
+    'alpha'       => 80,
+    'version'     => '0.1.9',
+];
