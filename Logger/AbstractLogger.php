@@ -12,21 +12,36 @@ abstract class AbstractLogger
     {
         $this->initConfig($configs);
     }
+
     /**
      * @param $siteId
-     * @param $group
+     * @param $groupName
+     * @param $referrer
      * @param $browser
      * @param $screenSize
      * @param $posX
      * @param $posY
      *
-     * @return boolean
+     * @return bool
+     * @internal param $group
      */
-    abstract public function log($siteId, $group, $browser, $screenSize, $posX, $posY);
+    abstract public function log($siteId, $groupName, $referrer, $browser, $screenSize, $posX, $posY);
 
     /**
      *
      * @return mixed
      */
     abstract public function clean();
+
+    /**
+     * @return mixed
+     */
+    abstract public function getAdapterClass();
+
+    /**
+     * @param $requestGroup
+     *
+     * @return mixed
+     */
+    abstract public function getGroupUrl($requestGroup);
 }

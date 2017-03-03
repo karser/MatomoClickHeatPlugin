@@ -12,14 +12,17 @@
 
 namespace Piwik\Plugins\ClickHeat;
 
-use HeatmapFromClicks;
 use Piwik\Container\StaticContainer;
 use Piwik\Cookie;
+use Piwik\Date;
 use Piwik\IP;
 use Piwik\Network\IPUtils;
+use Piwik\Plugins\ClickHeat\Adapter\HeatMapAdapterFactory;
 use Piwik\Plugins\ClickHeat\Logger\AbstractLogger;
 use Piwik\Plugins\ClickHeat\Utils\CacheStorage;
+use Piwik\Plugins\ClickHeat\Utils\DrawingTarget;
 use Piwik\Plugins\ClickHeat\Utils\Helper;
+use Piwik\Plugins\ClickHeat\Utils\ImprovedHeatmap;
 use Piwik\Site;
 use Piwik\Translate;
 use Piwik\Piwik;
@@ -82,6 +85,9 @@ class Controller extends \Piwik\Plugin\Controller
         }
 
         require(CLICKHEAT_CONFIG);
+        // Manually load the libs since Click Heat is not available in Composer
+        require_once(CLICKHEAT_ROOT . "classes/Heatmap.class.php");
+        require_once(CLICKHEAT_ROOT . "classes/HeatmapFromClicks.class.php");
         /** Specific definitions */
         $clickheatConf['__screenSizes'] = [0/** Must start with 0 */, 640, 800, 1024, 1280, 1440, 1600, 1800];
         $clickheatConf['__browsersList'] = ['all' => '', 'firefox' => 'Firefox', 'chrome' => 'Google Chrome', 'msie' => 'Internet Explorer', 'safari' => 'Safari', 'opera' => 'Opera', 'kmeleon' => 'K-meleon', 'unknown' => ''];
@@ -115,26 +121,12 @@ class Controller extends \Piwik\Plugin\Controller
         return self::$conf;
     }
 
-
-    public function iframe()
+    public function getGroupUrl()
     {
         // if you are not valid user, force login.
         Piwik::checkUserIsNotAnonymous();
-        $group = Common::getRequestVar('group');
-        $group = str_replace('/', '', $group);
-        $conf = $this->getConf();
-        if (is_dir($conf['logPath'] . $group)) {
-            $webPage = ['/'];
-            if (file_exists($conf['logPath'] . $group . '/url.txt')) {
-                $f = @fopen($conf['logPath'] . $group . '/url.txt', 'r');
-                if ($f !== false) {
-                    $webPage = explode('>', trim(fgets($f, 1024)));
-                    fclose($f);
-                }
-            }
-
-            return $webPage[0];
-        }
+        $group = str_replace('/', '', Common::getRequestVar('group'));
+        return self::$logger->getGroupUrl($group);
     }
 
     public function javascript()
@@ -163,98 +155,55 @@ class Controller extends \Piwik\Plugin\Controller
         @set_time_limit(120);
         @ini_set('memory_limit', self::$conf['memory'] . 'M');
         /* Browser */
-        $browser = Common::getRequestVar('browser');
-        if (!isset(self::$conf['__browsersList'][$browser])) {
-            $browser = 'all';
+        $browser = $this->getBrowser();
+        $screenInfo = $this->getScreenSize();
+        if (is_null($screenInfo)) {
+            return $this->error(LANG_ERROR_SCREEN);
         }
-        $screen = Common::getRequestVar('screen', 0);
-        $minScreen = 0;
-        if ($screen < 0) {
-            $width = abs($screen);
-            $maxScreen = 3000;
-        } else {
-            $maxScreen = $screen;
-            if (!in_array($screen, self::$conf['__screenSizes']) || $screen === 0) {
-                return $this->error(LANG_ERROR_SCREEN);
-            }
-            for ($i = 1; $i < count(self::$conf['__screenSizes']); $i++) {
-                if (self::$conf['__screenSizes'][$i] === $screen) {
-                    $minScreen = self::$conf['__screenSizes'][$i - 1];
-                    break;
-                }
-            }
-            $width = $screen - 25;
-        }
+        list($screen, $width, $minScreen, $maxScreen) = $screenInfo;
         /* Selected Group */
-        $group = str_replace('/', '', Common::getRequestVar('group', '****dead_directory****'));
-        if (!is_dir(self::$conf['logPath'] . $group)) {
-            return $this->error(LANG_ERROR_GROUP);
-        }
-        /* Show clicks or heatmap */
-        $heatmap = Common::getRequestVar('heatmap') === '1';
-
+        $group = str_replace('/', '', Common::getRequestVar('group'));
+        $isRequestHeatMap = Common::getRequestVar('heatmap') === '1';
         /* Date and days */
-        $time = isset($_SERVER['REQUEST_TIME']) ? $_SERVER['REQUEST_TIME'] : time();
-        $dateStamp = Common::getRequestVar('date') ? strtotime(Common::getRequestVar('date')) : $time;
+        $now = isset($_SERVER['REQUEST_TIME']) ? date('Y-m-d', $_SERVER['REQUEST_TIME']) : date('Y-m-d');
+        $requestDate = Common::getRequestVar('date') ? Common::getRequestVar('date') : $now;
         $range = Common::getRequestVar('range');
-        $range = in_array($range, ['d', 'w', 'm']) ? $range : 'd';
-        $date = date('Y-m-d', $dateStamp);
-        switch ($range) {
-            case 'd': {
-                $days = 1;
-                $delay = date('dmy', $dateStamp) !== date('dmy') ? 86400 : 120;
-                break;
-            }
-            case 'w': {
-                $days = 7;
-                $delay = date('Wy', $dateStamp) !== date('Wy') ? 86400 : 120;
-                break;
-            }
-            case 'm': {
-                $days = date('t', $dateStamp);
-                $delay = date('my', $dateStamp) !== date('my') ? 86400 : 120;
-                break;
-            }
-        }
-        $imagePath = $group . '-' . $date . '-' . $range . '-' . $screen . '-' . $browser . '-' . ($heatmap === true ? 'heat' : 'click');
+        list($minDate, $maxDate, $cacheTime) = $this->getDate($requestDate, $range);
+        $imagePath = $group . '-' . $requestDate . '-' . $range . '-' . $screen . '-' . $browser . '-' . ($isRequestHeatMap === true ? 'heat' : 'click');
         $htmlPath = self::$conf['cachePath'] . $imagePath . '.html';
         /* If images are already created, just stop script here if these have less than 120 seconds (today's log) or 86400 seconds (old logs) */
-        if (file_exists($htmlPath) && filemtime($htmlPath) > $time - $delay) {
+        if (file_exists($htmlPath) && filemtime($htmlPath) > strtotime($now) - $cacheTime) {
             return readfile($htmlPath);
         }
-
-        /* Get some data for the current group (centered and/or fixed layout) */
-        if (file_exists(self::$conf['logPath'] . $group . '/url.txt')) {
-            $f = fopen(self::$conf['logPath'] . $group . '/url.txt', 'r');
-            $layout = trim(fgets($f, 1024));
-            fclose($f);
-        } else {
-            $layout = '';
-        }
-        $layout = explode('>', $layout);
-        if (count($layout) !== 4) {
-            $layout = ['', 0, 0, 0];
-        }
-        $heatmapObject = $this->createHeatMap($heatmap, $browser, $minScreen, $maxScreen, $layout, $imagePath);
-
+        $target = new DrawingTarget([
+            'groupId'   => $group,
+            'browser'   => $browser,
+            'minScreen' => $minScreen,
+            'maxScreen' => $maxScreen,
+            'minDate'   => $minDate,
+            'maxDate'   => $maxDate,
+        ]);
+        $heatmapObject = $this->createHeatMap($target, $isRequestHeatMap, $browser, $minScreen, $maxScreen, $imagePath);
         /* Add files */
-        for ($day = 0; $day < $days; $day++) {
-            $currentDate = date('Y-m-d', mktime(0, 0, 0, date('m', $dateStamp), date('d', $dateStamp) + $day, date('Y', $dateStamp)));
-            $heatmapObject->addFile(self::$conf['logPath'] . $group . '/' . $currentDate . '.log');
-        }
-
+//        if (method_exists($heatmapObject, 'addFile')) {
+//            // TODO : move this to adapter
+//            for ($day = 0; $day < $days; $day++) {
+//                $currentDate = date('Y-m-d', mktime(0, 0, 0, date('m', $dateStamp), date('d', $dateStamp) + $day, date('Y', $dateStamp)));
+//                $this->addFile(self::$conf['logPath'] . $group . '/' . $currentDate . '.log');
+//            }
+//        }
         $result = $heatmapObject->generate($width);
         if ($result === false) {
             return $this->error($heatmapObject->error);
         }
         $html = '';
         for ($i = 0; $i < $result['count']; $i++) {
-            $html .= '<img src="' . CLICKHEAT_INDEX_PATH . 'action=png&amp;file=' . $result['filenames'][$i] . '&amp;rand=' . $time . '" width="' . $result['width'] . '" height="' . $result['height'] . '" alt="" id="heatmap-' . $i . '" /><br />';
+            $html .= '<img src="' . CLICKHEAT_INDEX_PATH . 'action=png&amp;file=' . $result['filenames'][$i] . '&amp;rand=' . strtotime($now) . '" width="' . $result['width'] . '" height="' . $result['height'] . '" alt="" id="heatmap-' . $i . '" /><br />';
         }
-        /* Save the HTML code to speed up following queries (only over two minutes) */
-        $f = fopen($htmlPath, 'w');
-        fputs($f, $html);
-        fclose($f);
+//        /* Save the HTML code to speed up following queries (only over two minutes) */
+//        $f = fopen($htmlPath, 'w');
+//        fputs($f, $html);
+//        fclose($f);
 
         return $html;
     }
@@ -272,40 +221,6 @@ class Controller extends \Piwik\Plugin\Controller
         } else {
             readfile(CLICKHEAT_ROOT . 'images/warning.png');
         }
-    }
-
-    public function layoutupdate()
-    {
-        // if you are not valid user, force login.
-        Piwik::checkUserIsNotAnonymous();
-        $group = str_replace('/', '', Common::getRequestVar('group', ''));
-        $url = Common::getRequestVar('url', '');
-        if (strpos($url, 'http') !== 0) {
-            $url = 'http://' . $_SERVER['SERVER_NAME'] . '/' . ltrim($url, '/');
-        }
-        $url = parse_url($url);
-        $left = Common::getRequestVar('left', 0);
-        $center = Common::getRequestVar('center', 0);
-        $right = Common::getRequestVar('right', 0);
-
-        $conf = $this->getConf();
-        if (!is_dir($conf['logPath'] . $group) || !isset($url['host']) || !isset($url['path'])) {
-            exit('Error');
-        }
-
-        if ($url['scheme'] !== 'http' && $url['scheme'] !== 'https') {
-            $url['scheme'] = 'http';
-        }
-        if (isset($url['query'])) {
-            $url = $url['scheme'] . '://' . $url['host'] . $url['path'] . '?' . $url['query'];
-        } else {
-            $url = $url['scheme'] . '://' . $url['host'] . $url['path'];
-        }
-        $f = fopen($conf['logPath'] . $group . '/url.txt', 'w');
-        fputs($f, $url . '>' . $left . '>' . $center . '>' . $right);
-        fclose($f);
-
-        exit('OK');
     }
 
     public function cleaner()
@@ -330,6 +245,7 @@ class Controller extends \Piwik\Plugin\Controller
         self::$logger->log(
             Common::getRequestVar('s'),
             Common::getRequestVar('g'),
+            $_SERVER['HTTP_REFERER'],
             Helper::getBrowser(Common::getRequestVar('b')),
             Common::getRequestVar('w'),
             Common::getRequestVar('x'),
@@ -345,11 +261,10 @@ class Controller extends \Piwik\Plugin\Controller
      */
     protected function isValidRequest()
     {
-        $clickheatConf = self::$conf;
+        $config = self::$conf;
         $group = Common::getRequestVar('g');
         if (
-            !isset($clickheatConf)
-            || !isset($_GET['x'])
+            !isset($_GET['x'])
             || !isset($_GET['y'])
             || !isset($_GET['w'])
             || empty($group)
@@ -360,18 +275,18 @@ class Controller extends \Piwik\Plugin\Controller
             return "\"ClickHeat: Parameters or config error\"";
         }
         // check referer
-        if (is_array($clickheatConf['referers'])) {
+        if (is_array($config['referers'])) {
             if (!isset($_SERVER['HTTP_REFERER'])) {
                 return 'ClickHeat: No domain in referer';
             }
             $referer = parse_url($_SERVER['HTTP_REFERER']);
-            if (!in_array($referer['host'], $clickheatConf['referers'])) {
+            if (!in_array($referer['host'], $config['referers'])) {
                 return 'ClickHeat: Forbidden domain (' . $referer['host'] . '), change or remove security settings in the /config panel to allow this one';
             }
         }
         // check valid group
-        if (is_array($clickheatConf['groups'])) {
-            if (!in_array($group, $clickheatConf['groups'])) {
+        if (is_array($config['groups'])) {
+            if (!in_array($group, $config['groups'])) {
                 return 'ClickHeat: Forbidden group (' . $group . '), change or remove security settings in the config panel to allow this one';
             }
 
@@ -421,32 +336,120 @@ class Controller extends \Piwik\Plugin\Controller
     }
 
     /**
-     * @param $heatmap
-     * @param $browser
-     * @param $minScreen
-     * @param $maxScreen
-     * @param $layout
-     * @param $imagePath
+     * @param DrawingTarget $target
+     * @param               $isRequestHeatMap
+     * @param               $browser
+     * @param               $minScreen
+     * @param               $maxScreen
+     * @param               $imagePath
      *
-     * @return HeatmapFromClicks
+     * @return ImprovedHeatmap
      */
-    private function createHeatMap($heatmap, $browser, $minScreen, $maxScreen, $layout, $imagePath)
+    private function createHeatMap(DrawingTarget $target, $isRequestHeatMap, $browser, $minScreen, $maxScreen, $imagePath)
     {
-        $obj = new HeatmapFromClicks();
+        $obj = HeatMapAdapterFactory::create(self::$logger);
+        $obj->setTarget($target);
+        $obj->heatmap = $isRequestHeatMap;
         $obj->browser = $browser;
         $obj->minScreen = $minScreen;
         $obj->maxScreen = $maxScreen;
-        $obj->layout = $layout;
+        $obj->layout = ['', 0, 0, 0]; // not support change layout at this time
         $obj->memory = self::$conf['memory'] * 1048576;
         $obj->step = self::$conf['step'];
         $obj->dot = self::$conf['dot'];
         $obj->palette = self::$conf['palette'];
-        $obj->heatmap = $heatmap;
         $obj->path = self::$conf['cachePath'];
         $obj->cache = self::$conf['cachePath'];
         $obj->file = $imagePath . '-%d.png';
 
         return $obj;
+    }
+
+    /**
+     * @return string
+     */
+    private function getBrowser()
+    {
+        $browser = Common::getRequestVar('browser');
+        if (!isset(self::$conf['__browsersList'][$browser])) {
+            $browser = 'all';
+        }
+
+        return $browser;
+    }
+
+    /**
+     * @return array|bool
+     */
+    private function getScreenSize()
+    {
+        $screen = Common::getRequestVar('screen', 0);
+        $minScreen = 0;
+        if ($screen < 0) {
+            $width = abs($screen);
+            $maxScreen = 3000;
+        } else {
+            $maxScreen = $screen;
+            if (!in_array($screen, self::$conf['__screenSizes']) || $screen === 0) {
+                return false;
+            }
+            for ($i = 1; $i < count(self::$conf['__screenSizes']); $i++) {
+                if (self::$conf['__screenSizes'][$i] === $screen) {
+                    $minScreen = self::$conf['__screenSizes'][$i - 1];
+                    break;
+                }
+            }
+            $width = $screen - 25;
+        }
+
+        return [
+            $screen,
+            $width,
+            $minScreen,
+            $maxScreen
+        ];
+    }
+
+    /**
+     * @param $requestDate
+     * @param $requestRange
+     *
+     * @return array
+     */
+    private function getDate($requestDate, $requestRange)
+    {
+        $range = in_array($requestRange, ['d', 'w', 'm']) ? $requestRange : 'd';
+        $date = explode(',', $requestDate);
+        if (count($date) == 2) {
+            $minDate = $date[0];
+            $maxDate = $date[1];
+        } else {
+            $minDate = $date[0];
+        }
+        switch ($range) {
+            case 'd': {
+                $maxDate = $minDate;
+                $cacheTime = date('dmy', $requestDate) !== date('dmy') ? 86400 : 120;
+                break;
+            }
+            case 'w': {
+                $maxDate = date('Y-m-d', strtotime($minDate . " +7 days"));
+                $cacheTime = date('Wy', $requestDate) !== date('Wy') ? 86400 : 120;
+                break;
+            }
+            case 'm': {
+                $days = date('t', $requestDate);
+                $maxDate = date('Y-m-d', strtotime($minDate . " +{$days} days"));
+                $cacheTime = date('my', $requestDate) !== date('my') ? 86400 : 120;
+                break;
+            }
+        }
+
+        return [
+            $minDate,
+            $maxDate,
+            $cacheTime
+        ];
     }
 
 }

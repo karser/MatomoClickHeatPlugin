@@ -15,7 +15,7 @@ use Piwik\Plugins\ClickHeat\Model;
 class MysqlLogger extends AbstractLogger
 {
     protected $config = [
-        'flush' => 0
+        'flush'  => 0
     ];
 
     /**
@@ -37,11 +37,15 @@ class MysqlLogger extends AbstractLogger
     /**
      * {@inheritdoc}
      */
-    public function log($siteId, $group, $browser, $screenSize, $posX, $posY)
+    public function log($siteId, $groupName, $referrer, $browser, $screenSize, $posX, $posY)
     {
+        $group = $this->model->getGroupByName($groupName, $siteId);
+        if (!$group) {
+            // create a new group
+            $group['id'] = $this->model->createGroup($groupName, $siteId);
+        }
         $newId = $this->model->addLog(
-            $siteId,
-            $group,
+            $group['id'],
             $browser,
             $screenSize,
             $posX,
@@ -56,4 +60,24 @@ class MysqlLogger extends AbstractLogger
         $this->model->cleanLogging($this->getConfig('flush'));
     }
 
+    /**
+     * @return string
+     */
+    public function getAdapterClass()
+    {
+        return 'Piwik\Plugins\ClickHeat\Adapter\MysqlHeatmapAdapter';
+    }
+
+    /**
+     * {@inheritdoc}
+     **/
+    public function getGroupUrl($requestGroup)
+    {
+        $group = $this->model->getGroup($requestGroup);
+        if (!$group) {
+            return false;
+        }
+
+        return $group['url'];
+    }
 }

@@ -274,7 +274,6 @@ class Heatmap
 			/* «imagefill» doesn't work correctly on some hosts, ending on a red drawing */
 			imagefilledrectangle($img, 0, 0, $this->width - 1, $this->height - 1, $white);
 			imagealphablending($img, true);
-
 			$imgSrc = @imagecreatefrompng(sprintf($this->cache.$this->file.'_temp', $image));
 			@unlink(sprintf($this->cache.$this->file.'_temp', $image));
 			if ($imgSrc === false)

@@ -11,6 +11,7 @@ namespace Piwik\Plugins\ClickHeat\Widgets;
 use Piwik\Common;
 use Piwik\Piwik;
 use Piwik\Plugins\ClickHeat\Controller;
+use Piwik\Plugins\ClickHeat\Model;
 use Piwik\Plugins\ClickHeat\Utils\Helper;
 use Piwik\Widget\Widget;
 use Piwik\Widget\WidgetConfig;
@@ -24,13 +25,31 @@ use Piwik\View;
  */
 class GetClickHeatMenu extends Widget
 {
+    /**
+     * @var Controller
+     */
     protected $controller;
 
-    public function __construct(Controller $controller)
+    /**
+     * @var Model
+     */
+    protected $model;
+
+    /**
+     * GetClickHeatMenu constructor.
+     *
+     * @param Controller $controller
+     * @param Model      $model
+     */
+    public function __construct(Controller $controller, Model $model)
     {
         $this->controller = $controller;
+        $this->model = $model;
     }
 
+    /**
+     * @param WidgetConfig $config
+     */
     public static function configure(WidgetConfig $config)
     {
         $config->setCategoryId('General_Visitors');
@@ -53,33 +72,13 @@ class GetClickHeatMenu extends Widget
     public function render()
     {
         /** List of available groups */
-        $groups = [];
         $conf = $this->controller->getConf();
-        $d = dir($conf['logPath']);
         /** Fix by Kowalikus: get the list of sites the current user has view access to */
         $idSite = (int) Common::getRequestVar('idSite');
         if (Piwik::isUserHasViewAccess($idSite) === false) {
             return false;
         }
-        while (($dir = $d->read()) !== false) {
-            if ($dir[0] === '.' || !is_dir($d->path . $dir)) {
-                continue;
-            }
-            $pos = strpos($dir, ',');
-            if ($pos === false) {
-                continue;
-            }
-            $site = (int) substr($dir, 0, $pos);
-            /** Fix by Kowalikus: check if current user has view access */
-            if ($site !== $idSite) {
-                continue;
-            }
-            $groups[$dir] = $pos === false ? $dir : substr($dir, $pos + 1);
-        }
-        $d->close();
-        /** Sort groups in alphabetical order */
-        ksort($groups);
-
+        $groups = $this->model->getGroupsBySite($idSite);
         /** Screen sizes */
         $__selectScreens = '';
         for ($i = 0; $i < count($conf['__screenSizes']); $i++) {
@@ -128,13 +127,9 @@ class GetClickHeatMenu extends Widget
         $view->assign('clickheat_host', 'http://' . $_SERVER['SERVER_NAME'] . $port);
         $view->assign('clickheat_path', CLICKHEAT_PATH);
         $view->assign('clickheat_index', CLICKHEAT_INDEX_PATH);
-        //$view->assign('clickheat_group', LANG_GROUP);
         $view->assign('clickheat_groups', $groups);
-        //$view->assign('clickheat_browser', LANG_BROWSER);
         $view->assign('clickheat_browsers', $__selectBrowsers);
-        //$view->assign('clickheat_screen', LANG_SCREENSIZE);
         $view->assign('clickheat_screens', $__selectScreens);
-        //$view->assign('clickheat_heatmap', LANG_HEATMAP);
         $view->clickheat_loading = str_replace('\'', '\\\'', Piwik::Translate('ClickHeat_LANG_ERROR_LOADING'));
         $view->clickheat_cleaner = str_replace('\'', '\\\'', Piwik::Translate('ClickHeat_LANG_CLEANER_RUNNING'));
         $view->clickheat_admincookie = str_replace('\'', '\\\'', Piwik::Translate('ClickHeat_LANG_JAVASCRIPT_ADMIN_COOKIE'));

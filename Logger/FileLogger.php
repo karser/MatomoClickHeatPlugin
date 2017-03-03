@@ -18,20 +18,13 @@ class FileLogger extends AbstractLogger
     ];
 
     /**
-     * @param $siteId
-     * @param $group
-     * @param $browser
-     * @param $screenSize
-     * @param $posX
-     * @param $posY
-     *
-     * @return boolean
-     */
-    public function log($siteId, $group, $browser, $screenSize, $posX, $posY)
+     * {@inheritdoc}
+    **/
+    public function log($siteId, $groupName, $referrer, $browser, $screenSize, $posX, $posY)
     {
         $logPath = $this->getConfig('logPath');
         $fileSize = $this->getConfig('fileSize');
-        $final = ltrim($siteId . ',' . $group, ',');
+        $final = ltrim($siteId . ',' . $groupName, ',');
         /* Limit file size */
         $processingLog = $this->getLogFile($logPath . $final);
         if ($fileSize !== 0) {
@@ -122,5 +115,34 @@ class FileLogger extends AbstractLogger
     private function getLogFile($folder)
     {
         return $folder . '/' . date('Y-m-d') . '.log';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getAdapterClass()
+    {
+        return '\HeatmapFromClicks';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getGroupUrl($requestGroup)
+    {
+        $logPath = $this->getConfig('logPath');
+        if (!is_dir($logPath . $requestGroup)) {
+            return false;
+        }
+        $webPage = ['/'];
+        if (file_exists($logPath . $requestGroup . '/url.txt')) {
+            $f = @fopen($logPath . $requestGroup . '/url.txt', 'r');
+            if ($f !== false) {
+                $webPage = explode('>', trim(fgets($f, 1024)));
+                fclose($f);
+            }
+        }
+
+        return $webPage[0];
     }
 }
