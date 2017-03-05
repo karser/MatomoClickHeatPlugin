@@ -5,26 +5,27 @@ namespace Piwik\Plugins\ClickHeat\Adapter;
 
 
 use Piwik\Container\StaticContainer;
+use Piwik\Exception\ErrorException;
 use Piwik\Plugins\ClickHeat\Logger\AbstractLogger;
-use Piwik\Plugins\ClickHeat\Utils\ImprovedHeatmap;
+use Piwik\Plugins\ClickHeat\Utils\AbstractHeatmap;
 
 class HeatMapAdapterFactory
 {
     /**
-     * @param AbstractLogger $logger
      *
-     * @return ImprovedHeatmap|null
+     * @param $adapterClass
+     *
+     * @return null|AbstractHeatmap
+     * @throws ErrorException
      */
-    public static function create(AbstractLogger $logger)
+    public static function create($adapterClass)
     {
-        $adapterClass = $logger->getAdapterClass();
         $adapter = null;
-        switch ($adapterClass) {
-            case 'Piwik\Plugins\ClickHeat\Adapter\MysqlHeatmapAdapter':
-                $adapter = StaticContainer::get($adapterClass);
-                break;
+        $adapter = StaticContainer::get($adapterClass);
+        if (!$adapter instanceof AbstractHeatmap) {
+            $error = sprintf('Adapter class must be an instance of Piwik\Plugins\ClickHeat\Utils\AbstractHeatmap . %s given.', $adapterClass);
+            throw new ErrorException($error, 500);
         }
-
         return $adapter;
     }
 }

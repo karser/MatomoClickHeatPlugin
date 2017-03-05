@@ -17,8 +17,8 @@ trait Configurable
         if (!count($this->config) || !count($configs)) {
             return false;
         }
-        foreach ($this->config as $configKey) {
-            if (array_key_exists($configKey, $configs)) {
+        foreach ($this->config as $configKey => $value) {
+            if (isset($configs[$configKey])) {
                 $this->config[$configKey] = $configs[$configKey];
             }
         }

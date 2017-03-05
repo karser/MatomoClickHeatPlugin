@@ -1,31 +1,34 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Trung Tran
- * Date: 2/28/17
- * Time: 16:43
- */
+
 
 namespace Piwik\Plugins\ClickHeat\Logger;
 
 
 use Piwik\Container\StaticContainer;
-use Piwik\Plugins\ClickHeat\Model\MysqlModel;
 
-class MysqlLogger extends AbstractLogger
+class RedisLogger extends AbstractLogger
 {
-    protected $config = [
-        'flush'  => 0
-    ];
     /**
-     * MysqlLogger constructor.
+     * @var array
+     */
+    protected $config = [
+        'redis' => [
+            'scheme' => 'tcp',
+            'host'   => '10.0.0.1',
+            'port'   => 6379,
+        ]
+    ];
+
+    /**
+     * RedisLogger constructor.
      *
      * @param array $configs
      */
     public function __construct(array $configs)
     {
-        parent::initConfig($configs);
-        $this->model = StaticContainer::get('Piwik\Plugins\ClickHeat\Model\MysqlModel');
+        parent::__construct($configs);
+        $this->model = StaticContainer::get('Piwik\Plugins\ClickHeat\Model\RedisModel');
+        $this->model->createClient($this->getConfig('redis'));
     }
 
     /**
@@ -36,11 +39,12 @@ class MysqlLogger extends AbstractLogger
         $group = $this->model->getGroupByName($groupName, $siteId);
         if (!$group) {
             // create a new group
-            $group['id'] = $this->model->createGroup($groupName, $referrer, $siteId);
+            $this->model->createGroup($groupName, $referrer, $siteId);
         }
+        $groupId = $groupName;
         $newId = $this->model->addLog(
             $siteId,
-            $group['id'],
+            $groupId,
             $browser,
             $screenSize,
             $posX,
@@ -50,29 +54,31 @@ class MysqlLogger extends AbstractLogger
         return boolval($newId);
     }
 
+    /**
+     *
+     * @return mixed
+     */
     public function clean()
     {
-        $this->model->cleanLogging($this->getConfig('flush'));
+        // TODO: Implement clean() method.
     }
 
     /**
-     * @return string
+     * @return mixed
      */
     public function getAdapterClass()
     {
-        return 'Piwik\Plugins\ClickHeat\Adapter\MysqlHeatmapAdapter';
+        return "";
     }
 
     /**
-     * {@inheritdoc}
-     **/
+     * @param $requestGroup
+     *
+     * @return mixed
+     */
     public function getGroupUrl($requestGroup)
     {
-        $group = $this->model->getGroup($requestGroup);
-        if (!$group) {
-            return false;
-        }
-
-        return $group['url'];
+        // TODO: Implement getGroupUrl() method.
     }
+
 }

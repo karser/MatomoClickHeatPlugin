@@ -6,14 +6,14 @@
  * Time: 14:00
  */
 
-namespace Piwik\Plugins\ClickHeat;
+namespace Piwik\Plugins\ClickHeat\Model;
 
 use Piwik\Common;
 use Piwik\Db;
 use Piwik\DbHelper;
 use Piwik\Plugins\ClickHeat\Utils\DrawingTarget;
 
-class Model
+class MysqlModel implements LoggerModelInterface
 {
     private static $rawPrefix = 'click_heat';
 
@@ -36,27 +36,20 @@ class Model
     }
 
     /**
-     * Add click heat log
-     *
-     * @param $groupId
-     * @param $browser
-     * @param $screenSize
-     * @param $posX
-     * @param $posY
-     *
-     * @return int
-     * @internal param $topPos
-     * @internal param $leftPos
+     * {@inheritdoc}
      */
-    public function addLog($groupId, $browser, $screenSize, $posX, $posY)
+    public function addLog($siteId, $groupId, $browser, $screenSize, $posX, $posY, $date = '')
     {
+        if (!$date) {
+            $date = date('Y-m-d');
+        }
         $data = [
             'group_id'    => $groupId,
             'browser'     => $browser,
             'screen_size' => $screenSize,
             'pos_x'       => $posX,
             'pos_y'       => $posY,
-            'date'        => date('Y-m-d')
+            'date'        => $date
         ];
         $this->getDb()->insert($this->table, $data);
 
@@ -104,9 +97,7 @@ class Model
     }
 
     /**
-     * @param $days
-     *
-     * @return int|\Zend_Db_Statement
+     * {@inheritdoc}
      */
     public function cleanLogging($days)
     {

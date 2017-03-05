@@ -1,12 +1,17 @@
 <?php
-
-
+/**
+ * ClickHeat : Maps generation class from a ClickHeat logfile
+ *
+ * @author Yvan Taviaud - Dugwood - www.dugwood.com
+ * @since 12/05/2007
+ * @modifier trungtran07@gmail.com 2017-03
+ */
 namespace Piwik\Plugins\ClickHeat\Adapter;
 
+use Piwik\Piwik;
+use Piwik\Plugins\ClickHeat\Utils\AbstractHeatmap;
 
-use Piwik\Plugins\ClickHeat\Utils\ImprovedHeatmap;
-
-class FileSystemHeatmapAdapter extends ImprovedHeatmap
+class FileSystemHeatmapAdapter extends AbstractHeatmap
 {
     /** @var array $files Logfiles to use */
     var $files = [];
@@ -19,17 +24,12 @@ class FileSystemHeatmapAdapter extends ImprovedHeatmap
     /** @var integer $maxScreen Screen filter */
     var $maxScreen;
 
-    public function bootstrap()
-    {
-
-    }
-
     /**
      * Add a file to parse and check existence
      *
      * @param string $file
      */
-    function addFile($file)
+    public function addFile($file)
     {
         if (file_exists($file)) {
             $this->files[] = $file;
@@ -37,21 +37,23 @@ class FileSystemHeatmapAdapter extends ImprovedHeatmap
     }
 
     /**
-     * Do some tasks before drawing (database connection...)
+     * {@inheritdoc}
      */
-    function startDrawing()
+    public function startDrawing()
     {
+        /* Add files */
+        // TODO : move this to adapter
+        $maxDate = strtotime($this->target->getMaxDate());
+        $processingDate = strtotime($this->target->getMinDate());
+        while ($processingDate < $maxDate) {
+            $this->addFile($this->target->getLogPath() . $this->target->getGroupId() . '/' . date('Y-m-d', $processingDate) . '.log');
+            $processingDate += 86400; // +1 day
+        }
+
         return true;
     }
 
-    /**
-     * Find pixels coords and draw these on the current image
-     *
-     * @param integer $image Number of the image (to be used with $this->height)
-     *
-     * @return boolean Success
-     */
-    function drawPixels($image)
+    public function drawPixels($image)
     {
         /** If it's not the first image, just use the value stored in the temp files */
         if ($image !== 0) {
@@ -221,10 +223,47 @@ class FileSystemHeatmapAdapter extends ImprovedHeatmap
     /**
      * Do some cleaning or ending tasks (close database, reset array...)
      */
-    function finishDrawing()
+    public function finishDrawing()
     {
         $this->files = [];
 
         return true;
+    }
+
+    /**
+     * @param $idSite
+     *
+     * @return mixed
+     */
+    public function getGroups($idSite)
+    {
+        $groups = [];
+        $logPath = $this->target->getLogPath();
+        $d = dir($logPath);
+        /** Fix by Kowalikus: get the list of sites the current user has view access to */
+        if (Piwik::isUserHasViewAccess($idSite) === false) {
+            return false;
+        }
+
+        while (($dir = $d->read()) !== false) {
+            if ($dir[0] === '.' || !is_dir($d->path . $dir)) {
+                continue;
+            }
+            $pos = strpos($dir, ',');
+            if ($pos === false) {
+                continue;
+            }
+            $site = (int) substr($dir, 0, $pos);
+            /** Fix by Kowalikus: check if current user has view access */
+            if ($site !== $idSite) {
+                continue;
+            }
+            $groups[$dir] = $pos === false ? $dir : substr($dir, $pos + 1);
+        }
+        $d->close();
+        /** Sort groups in alphabetical order */
+        ksort($groups);
+
+        return $groups;
     }
 }

@@ -3,13 +3,11 @@
 
 namespace Piwik\Plugins\ClickHeat\Adapter;
 
-
 use Piwik\Container\StaticContainer;
-use Piwik\Plugins\ClickHeat\Model;
-use Piwik\Plugins\ClickHeat\Utils\DrawingTarget;
-use Piwik\Plugins\ClickHeat\Utils\ImprovedHeatmap;
+use Piwik\Plugins\ClickHeat\Model\MysqlModel;
+use Piwik\Plugins\ClickHeat\Utils\AbstractHeatmap;
 
-class MysqlHeatmapAdapter extends ImprovedHeatmap
+class MysqlHeatmapAdapter extends AbstractHeatmap
 {
     /**
      * Maximum number of results returned by each request call
@@ -18,14 +16,14 @@ class MysqlHeatmapAdapter extends ImprovedHeatmap
     var $limit = 1000;
 
     /**
-     * @var Model
+     * @var MysqlModel
      */
     protected $model;
 
     public function __construct()
     {
         parent::__construct();
-        $this->model = StaticContainer::get('Piwik\Plugins\ClickHeat\Model');
+        $this->model = StaticContainer::get('Piwik\Plugins\ClickHeat\Model\MysqlModel');
     }
 
     /**
@@ -43,10 +41,7 @@ class MysqlHeatmapAdapter extends ImprovedHeatmap
     }
 
     /**
-     * Find pixels coords and draw these on the current image
-     *
-     * @param integer $image Number of the image (to be used with $this->height)
-     *
+     * {@inheritdoc}
      * @return boolean Success
      */
     function drawPixels($image)
@@ -94,5 +89,16 @@ class MysqlHeatmapAdapter extends ImprovedHeatmap
     {
         $this->target = null;
         return true;
+    }
+
+
+    /**
+     * @param $idSite
+     *
+     * @return mixed
+     */
+    public function getGroups($idSite)
+    {
+        return $this->model->getGroupsBySite($idSite);
     }
 }

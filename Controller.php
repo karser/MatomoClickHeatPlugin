@@ -14,15 +14,14 @@ namespace Piwik\Plugins\ClickHeat;
 
 use Piwik\Container\StaticContainer;
 use Piwik\Cookie;
-use Piwik\Date;
 use Piwik\IP;
 use Piwik\Network\IPUtils;
 use Piwik\Plugins\ClickHeat\Adapter\HeatMapAdapterFactory;
 use Piwik\Plugins\ClickHeat\Logger\AbstractLogger;
+use Piwik\Plugins\ClickHeat\Utils\AbstractHeatmap;
 use Piwik\Plugins\ClickHeat\Utils\CacheStorage;
 use Piwik\Plugins\ClickHeat\Utils\DrawingTarget;
 use Piwik\Plugins\ClickHeat\Utils\Helper;
-use Piwik\Plugins\ClickHeat\Utils\ImprovedHeatmap;
 use Piwik\Site;
 use Piwik\Translate;
 use Piwik\Piwik;
@@ -35,7 +34,7 @@ class Controller extends \Piwik\Plugin\Controller
     /**
      * @var AbstractLogger
      */
-    static $logger;
+    protected $logger;
 
     public function init()
     {
@@ -50,7 +49,6 @@ class Controller extends \Piwik\Plugin\Controller
         } else {
             exit(LANG_UNKNOWN_DIR);
         }
-
         /** First of all, check if we are inside Piwik */
         $dirName = dirname($realPath);
         if ($dirName === '/') {
@@ -74,8 +72,6 @@ class Controller extends \Piwik\Plugin\Controller
         if (!defined('CLICKHEAT_LANGUAGE')) {
             define('CLICKHEAT_LANGUAGE', Translate::getLanguageToLoad());
         }
-
-
         if (!defined('CLICKHEAT_ADMIN')) {
             if (Piwik::hasUserSuperUserAccess()) {
                 define('CLICKHEAT_ADMIN', true);
@@ -83,19 +79,15 @@ class Controller extends \Piwik\Plugin\Controller
                 define('CLICKHEAT_ADMIN', false);
             }
         }
-
+        $clickHeatConfig = [];
         require(CLICKHEAT_CONFIG);
-        // Manually load the libs since Click Heat is not available in Composer
+        // Manually load the class since Click Heat is not available in Composer
         require_once(CLICKHEAT_ROOT . "classes/Heatmap.class.php");
-        require_once(CLICKHEAT_ROOT . "classes/HeatmapFromClicks.class.php");
-        /** Specific definitions */
-        $clickheatConf['__screenSizes'] = [0/** Must start with 0 */, 640, 800, 1024, 1280, 1440, 1600, 1800];
-        $clickheatConf['__browsersList'] = ['all' => '', 'firefox' => 'Firefox', 'chrome' => 'Google Chrome', 'msie' => 'Internet Explorer', 'safari' => 'Safari', 'opera' => 'Opera', 'kmeleon' => 'K-meleon', 'unknown' => ''];
 
-        $this->setConf($clickheatConf);
-        if (!self::$logger) {
+        $this->setConf($clickHeatConfig);
+        if (!$this->logger) {
             $logger = self::$conf['logger'];
-            self::$logger = new $logger($clickheatConf);
+            $this->logger = new $logger($clickHeatConfig);
         }
     }
 
@@ -126,7 +118,8 @@ class Controller extends \Piwik\Plugin\Controller
         // if you are not valid user, force login.
         Piwik::checkUserIsNotAnonymous();
         $group = str_replace('/', '', Common::getRequestVar('group'));
-        return self::$logger->getGroupUrl($group);
+
+        return $this->logger->getGroupUrl($group);
     }
 
     public function javascript()
@@ -182,16 +175,9 @@ class Controller extends \Piwik\Plugin\Controller
             'maxScreen' => $maxScreen,
             'minDate'   => $minDate,
             'maxDate'   => $maxDate,
+            'logPath'   => self::$conf['logPath']
         ]);
         $heatmapObject = $this->createHeatMap($target, $isRequestHeatMap, $browser, $minScreen, $maxScreen, $imagePath);
-        /* Add files */
-//        if (method_exists($heatmapObject, 'addFile')) {
-//            // TODO : move this to adapter
-//            for ($day = 0; $day < $days; $day++) {
-//                $currentDate = date('Y-m-d', mktime(0, 0, 0, date('m', $dateStamp), date('d', $dateStamp) + $day, date('Y', $dateStamp)));
-//                $this->addFile(self::$conf['logPath'] . $group . '/' . $currentDate . '.log');
-//            }
-//        }
         $result = $heatmapObject->generate($width);
         if ($result === false) {
             return $this->error($heatmapObject->error);
@@ -200,10 +186,10 @@ class Controller extends \Piwik\Plugin\Controller
         for ($i = 0; $i < $result['count']; $i++) {
             $html .= '<img src="' . CLICKHEAT_INDEX_PATH . 'action=png&amp;file=' . $result['filenames'][$i] . '&amp;rand=' . strtotime($now) . '" width="' . $result['width'] . '" height="' . $result['height'] . '" alt="" id="heatmap-' . $i . '" /><br />';
         }
-//        /* Save the HTML code to speed up following queries (only over two minutes) */
-//        $f = fopen($htmlPath, 'w');
-//        fputs($f, $html);
-//        fclose($f);
+        /* Save the HTML code to speed up following queries (only over two minutes) */
+        $f = fopen($htmlPath, 'w');
+        fputs($f, $html);
+        fclose($f);
 
         return $html;
     }
@@ -229,12 +215,16 @@ class Controller extends \Piwik\Plugin\Controller
         Piwik::checkUserIsNotAnonymous();
         $config = self::$conf;
         if ($config['flush']) {
-            self::$logger->clean();
+            $this->logger->clean();
         }
         $cacheCleaner = StaticContainer::get(CacheStorage::class);
         $cacheCleaner->clean($config['cachePath']);
     }
 
+    /**
+     * Track the click
+     * @return bool|string
+     */
     public function click()
     {
         $validateRequest = $this->isValidRequest();
@@ -242,7 +232,7 @@ class Controller extends \Piwik\Plugin\Controller
             return $validateRequest;
         }
         @ignore_user_abort(true);
-        self::$logger->log(
+        $this->logger->log(
             Common::getRequestVar('s'),
             Common::getRequestVar('g'),
             $_SERVER['HTTP_REFERER'],
@@ -275,13 +265,15 @@ class Controller extends \Piwik\Plugin\Controller
             return "\"ClickHeat: Parameters or config error\"";
         }
         // check referer
-        if (is_array($config['referers'])) {
+        if ($config['referers']) {
             if (!isset($_SERVER['HTTP_REFERER'])) {
                 return 'ClickHeat: No domain in referer';
             }
-            $referer = parse_url($_SERVER['HTTP_REFERER']);
-            if (!in_array($referer['host'], $config['referers'])) {
-                return 'ClickHeat: Forbidden domain (' . $referer['host'] . '), change or remove security settings in the /config panel to allow this one';
+            if (is_array($config['referers'])) {
+                $referer = parse_url($_SERVER['HTTP_REFERER']);
+                if (!in_array($referer['host'], $config['referers'])) {
+                    return 'ClickHeat: Forbidden domain (' . $referer['host'] . '), change or remove security settings in the /config panel to allow this one';
+                }
             }
         }
         // check valid group
@@ -343,11 +335,11 @@ class Controller extends \Piwik\Plugin\Controller
      * @param               $maxScreen
      * @param               $imagePath
      *
-     * @return ImprovedHeatmap
+     * @return null|AbstractHeatmap
      */
     private function createHeatMap(DrawingTarget $target, $isRequestHeatMap, $browser, $minScreen, $maxScreen, $imagePath)
     {
-        $obj = HeatMapAdapterFactory::create(self::$logger);
+        $obj = HeatMapAdapterFactory::create(self::$conf['adapter']);
         $obj->setTarget($target);
         $obj->heatmap = $isRequestHeatMap;
         $obj->browser = $browser;

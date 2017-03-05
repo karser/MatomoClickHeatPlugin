@@ -37,6 +37,11 @@ class DrawingTarget
     protected $maxDate;
 
     /**
+     * @var string
+     */
+    protected $logPath;
+
+    /**
      * DrawingTarget constructor.
      *
      * @param $target
@@ -190,5 +195,24 @@ class DrawingTarget
         return $this;
     }
 
+    /**
+     * @return string
+     */
+    public function getLogPath()
+    {
+        return $this->logPath;
+    }
+
+    /**
+     * @param string $logPath
+     *
+     * @return DrawingTarget
+     */
+    public function setLogPath($logPath)
+    {
+        $this->logPath = $logPath;
+
+        return $this;
+    }
 
 }

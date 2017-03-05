@@ -165,6 +165,9 @@ function catchClickHeat(e)
 			clickHeatQuota = clickHeatQuota - 1;
 		}
 		params = 's=' + clickHeatSite + '&g=' + clickHeatGroup + '&x=' + x + '&y=' + y + '&w=' + w + '&b=' + clickHeatBrowser + '&c=' + c + '&random=' + Date();
+		if (clickHeatServer.indexOf('?') !== -1) {
+			params = '&' + params;
+		}
 		showClickHeatDebug('Ready to send click data...');
 		/* Local request (not starting with "http")? Try an ajax call */
 		if (clickHeatServer.indexOf('http') !== 0)
@@ -213,7 +216,7 @@ function catchClickHeat(e)
 						}
 					};
 				}
-				xmlhttp.open('GET', clickHeatServer + '?' + params, true);
+				xmlhttp.open('GET', clickHeatServer + params, true);
 				xmlhttp.send(null);
 				sent = true;
 			}
@@ -223,12 +226,12 @@ function catchClickHeat(e)
 			/* This test is needed, as it includes the call to click.php in the iframe */
 			if (clickHeatDebug === true)
 			{
-				showClickHeatDebug('Click recorded at ' + clickHeatServer + ' with the following parameters:<br/>x = ' + (x + scrollx) + ' (' + x + 'px from left + ' + scrollx + 'px of horizontal scrolling)<br/>y = ' + (y + scrolly) + ' (' + y + 'px from top + ' + scrolly + 'px of vertical scrolling)<br/>width = ' + w + '<br/>browser = ' + clickHeatBrowser + '<br/>click = ' + c + '<br/>site = ' + clickHeatSite + '<br/>group = ' + clickHeatGroup + '<br/><br/>Server answer:<br/>' + '<iframe src="' + clickHeatServer + '?' + params + '" width="700" height="60"></iframe>');
+				showClickHeatDebug('Click recorded at ' + clickHeatServer + ' with the following parameters:<br/>x = ' + (x + scrollx) + ' (' + x + 'px from left + ' + scrollx + 'px of horizontal scrolling)<br/>y = ' + (y + scrolly) + ' (' + y + 'px from top + ' + scrolly + 'px of vertical scrolling)<br/>width = ' + w + '<br/>browser = ' + clickHeatBrowser + '<br/>click = ' + c + '<br/>site = ' + clickHeatSite + '<br/>group = ' + clickHeatGroup + '<br/><br/>Server answer:<br/>' + '<iframe src="' + clickHeatServer + params + '" width="700" height="60"></iframe>');
 			}
 			else
 			{
 				clickHeatImg = new Image();
-				clickHeatImg.src = clickHeatServer + '?' + params;
+				clickHeatImg.src = clickHeatServer + params;
 				//			clickHeatImg.onload = function() { clickHeatLocalWait = 0; }
 			}
 		}

@@ -4,7 +4,7 @@ namespace Piwik\Plugins\ClickHeat\Logger;
 
 use Piwik\Common;
 
-class FileLogger extends AbstractLogger
+class FileSystemLogger extends AbstractLogger
 {
     const URL_LOGGING_FILE = 'url.txt';
 
@@ -19,7 +19,7 @@ class FileLogger extends AbstractLogger
 
     /**
      * {@inheritdoc}
-    **/
+     **/
     public function log($siteId, $groupName, $referrer, $browser, $screenSize, $posX, $posY)
     {
         $logPath = $this->getConfig('logPath');
@@ -54,6 +54,7 @@ class FileLogger extends AbstractLogger
         }
         if (!is_resource($f)) {
             Common::printDebug('ClickHeat: Error, file not writable');
+
             return false;
         }
         fputs($f, ((int) $posX) . '|' . ((int) $posY) . '|' . ((int) $screenSize) . '|' . $browser . '|' . ((int) $siteId) . "\n");
@@ -122,7 +123,7 @@ class FileLogger extends AbstractLogger
      */
     public function getAdapterClass()
     {
-        return '\HeatmapFromClicks';
+        return 'Piwik\Plugins\ClickHeat\Adapter\FileSystemHeatmapAdapter';
     }
 
     /**

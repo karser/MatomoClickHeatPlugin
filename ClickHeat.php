@@ -11,8 +11,7 @@
  */
 
 namespace Piwik\Plugins\ClickHeat;
-use Piwik\Common;
-use Piwik\Db;
+use Piwik\Plugins\ClickHeat\Model\MysqlModel;
 
 class ClickHeat extends \Piwik\Plugin
 {
@@ -32,11 +31,11 @@ class ClickHeat extends \Piwik\Plugin
 		if (file_exists($htaccess)) {
 			copy($htaccess, PIWIK_INCLUDE_PATH.'/plugins/ClickHeat/.htaccess');
 		}
-        Model::install();
+        MysqlModel::install();
 	}
 
     public function uninstall()
     {
-        Model::uninstall();
+        MysqlModel::uninstall();
     }
 }
