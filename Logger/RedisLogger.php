@@ -5,30 +5,21 @@ namespace Piwik\Plugins\ClickHeat\Logger;
 
 
 use Piwik\Container\StaticContainer;
+use Piwik\Plugins\ClickHeat\Config;
 
-class RedisLogger extends AbstractLogger
+class RedisLogger extends AbstractLogger implements LoggerImporterInterface
 {
-    /**
-     * @var array
-     */
-    protected $config = [
-        'redis' => [
-            'scheme' => 'tcp',
-            'host'   => '10.0.0.1',
-            'port'   => 6379,
-        ]
-    ];
 
     /**
      * RedisLogger constructor.
      *
      * @param array $configs
      */
-    public function __construct(array $configs)
+    public function __construct(array $configs = [])
     {
         parent::__construct($configs);
         $this->model = StaticContainer::get('Piwik\Plugins\ClickHeat\Model\RedisModel');
-        $this->model->createClient($this->getConfig('redis'));
+        $this->model->createClient(Config::get('redis'));
     }
 
     /**
@@ -64,21 +55,33 @@ class RedisLogger extends AbstractLogger
     }
 
     /**
-     * @return mixed
+     * @param $siteID
+     *
+     * @return array
      */
-    public function getAdapterClass()
+    public function getGroupsBySite($siteID)
     {
-        return "";
+        $groups = $this->model->getGroups($siteID);
+
+        return $groups;
     }
 
     /**
-     * @param $requestGroup
+     * {@inheritdoc}
+     */
+    public function removeLog($siteId, $groupHash, $hashField)
+    {
+        return $this->model->removeLoggingData($siteId, $groupHash, $hashField);
+    }
+
+    /**
+     * @param $siteId
+     * @param $group
      *
      * @return mixed
      */
-    public function getGroupUrl($requestGroup)
+    public function getLoggingData($siteId, $group)
     {
-        // TODO: Implement getGroupUrl() method.
+        return $this->model->getData($siteId, $group);
     }
-
 }

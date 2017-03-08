@@ -43,15 +43,4 @@ abstract class AbstractLogger
      */
     abstract public function clean();
 
-    /**
-     * @return mixed
-     */
-    abstract public function getAdapterClass();
-
-    /**
-     * @param $requestGroup
-     *
-     * @return mixed
-     */
-    abstract public function getGroupUrl($requestGroup);
 }

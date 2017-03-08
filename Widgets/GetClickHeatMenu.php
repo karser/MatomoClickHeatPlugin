@@ -12,10 +12,7 @@ use Piwik\Common;
 use Piwik\Container\StaticContainer;
 use Piwik\Piwik;
 use Piwik\Plugins\ClickHeat\Adapter\HeatmapAdapterInterface;
-use Piwik\Plugins\ClickHeat\Controller;
-use Piwik\Plugins\ClickHeat\Model;
-use Piwik\Plugins\ClickHeat\Model\AbstractModel;
-use Piwik\Plugins\ClickHeat\Utils\AbstractHeatmap;
+use Piwik\Plugins\ClickHeat\Config;
 use Piwik\Plugins\ClickHeat\Utils\Helper;
 use Piwik\Widget\Widget;
 use Piwik\Widget\WidgetConfig;
@@ -39,8 +36,7 @@ class GetClickHeatMenu extends Widget
      */
     public function __construct()
     {
-        $config = Controller::$conf;
-        $this->adapter = StaticContainer::get($config['adapter']);
+        $this->adapter = StaticContainer::get(Config::get('adapter'));
     }
 
     /**
@@ -67,14 +63,14 @@ class GetClickHeatMenu extends Widget
      */
     public function render()
     {
+        Config::init();
         /** List of available groups */
-        $conf = Controller::$conf;
+        $conf = Config::all();
         /** Fix by Kowalikus: get the list of sites the current user has view access to */
         $idSite = (int) Common::getRequestVar('idSite');
         if (Piwik::isUserHasViewAccess($idSite) === false) {
             return false;
         }
-        $groups = $this->adapter->getGroups($idSite);
         /** Screen sizes */
         $__selectScreens = '';
         for ($i = 0; $i < count($conf['__screenSizes']); $i++) {
@@ -117,6 +113,8 @@ class GetClickHeatMenu extends Widget
         } elseif ($range === 'm') {
             $__day = 1;
         }
+
+        $groups = $this->adapter->getGroups($idSite);
 
         $view = new View('@ClickHeat/view');
         $port = Helper::getServerPort();

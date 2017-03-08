@@ -38,10 +38,9 @@ class Controller extends \Piwik\Plugin\Controller
 
     public function init()
     {
+        Config::init();
         // if you are not valid user, force login.
         Piwik::checkUserIsNotAnonymous();
-        $__languages = ['bg', 'cz', 'de', 'en', 'es', 'fr', 'hu', 'id', 'it', 'ja', 'nl', 'pl', 'pt', 'ro', 'ru', 'sr', 'tr', 'uk', 'zh'];
-
         if (isset($_SERVER['REQUEST_URI']) && $_SERVER['REQUEST_URI'] !== '') {
             $realPath = &$_SERVER['REQUEST_URI'];
         } elseif (isset($_SERVER['SCRIPT_NAME']) && $_SERVER['SCRIPT_NAME'] !== '') {
@@ -64,7 +63,7 @@ class Controller extends \Piwik\Plugin\Controller
             define('CLICKHEAT_ROOT', PIWIK_INCLUDE_PATH . '/plugins/ClickHeat/libs/');
         }
         if (!defined('CLICKHEAT_CONFIG')) {
-            define('CLICKHEAT_CONFIG', PIWIK_INCLUDE_PATH . '/plugins/ClickHeat/clickheat_config.php');
+            define('CLICKHEAT_CONFIG', PIWIK_INCLUDE_PATH . '/plugins/ClickHeat/config.php');
         }
         if (!defined('IS_PIWIK_MODULE')) {
             define('IS_PIWIK_MODULE', true);
@@ -79,38 +78,13 @@ class Controller extends \Piwik\Plugin\Controller
                 define('CLICKHEAT_ADMIN', false);
             }
         }
-        $clickHeatConfig = [];
-        require(CLICKHEAT_CONFIG);
         // Manually load the class since Click Heat is not available in Composer
         require_once(CLICKHEAT_ROOT . "classes/Heatmap.class.php");
 
-        $this->setConf($clickHeatConfig);
         if (!$this->logger) {
-            $logger = self::$conf['logger'];
-            $this->logger = new $logger($clickHeatConfig);
+            $logger = Config::get('logger');
+            $this->logger = new $logger(Config::all());
         }
-    }
-
-    /** It's a static class, but PHP 4 doesn't know about «static»
-     *
-     * @param array $conf
-     *
-     * @return bool
-     */
-    private function setConf($conf = [])
-    {
-        if (is_array($conf) && count($conf)) {
-            self::$conf = $conf;
-
-            return true;
-        }
-
-        return false;
-    }
-
-    public static function getConf()
-    {
-        return self::$conf;
     }
 
     public function getGroupUrl()
@@ -118,12 +92,14 @@ class Controller extends \Piwik\Plugin\Controller
         // if you are not valid user, force login.
         Piwik::checkUserIsNotAnonymous();
         $group = str_replace('/', '', Common::getRequestVar('group'));
+        $adapter = StaticContainer::get(Config::get('adapter'));
 
-        return $this->logger->getGroupUrl($group);
+        return $adapter->getGroupUrl($group);
     }
 
     public function javascript()
     {
+        // TODO: should return from a twig view
         // if you are not valid user, force login.
         Piwik::checkUserIsNotAnonymous();
         foreach (['', '_GROUP', '_GROUP0', '_GROUP1', '_GROUP2', '_GROUP3', '_DEBUG', '_QUOTA', '_IMAGE', '_SHORT', '_PASTE'] as $value) {
@@ -134,6 +110,7 @@ class Controller extends \Piwik\Plugin\Controller
 
     public function layout()
     {
+        // TODO: should return from a twig view
         // if you are not valid user, force login.
         Piwik::checkUserIsNotAnonymous();
         include(CLICKHEAT_ROOT . 'layout.php');
@@ -146,7 +123,7 @@ class Controller extends \Piwik\Plugin\Controller
 
         /* Time and memory limits */
         @set_time_limit(120);
-        @ini_set('memory_limit', self::$conf['memory'] . 'M');
+        @ini_set('memory_limit', Config::get('memory') . 'M');
         /* Browser */
         $browser = $this->getBrowser();
         $screenInfo = $this->getScreenSize();
@@ -163,7 +140,7 @@ class Controller extends \Piwik\Plugin\Controller
         $range = Common::getRequestVar('range');
         list($minDate, $maxDate, $cacheTime) = $this->getDate($requestDate, $range);
         $imagePath = $group . '-' . $requestDate . '-' . $range . '-' . $screen . '-' . $browser . '-' . ($isRequestHeatMap === true ? 'heat' : 'click');
-        $htmlPath = self::$conf['cachePath'] . $imagePath . '.html';
+        $htmlPath = Config::get('cachePath') . $imagePath . '.html';
         /* If images are already created, just stop script here if these have less than 120 seconds (today's log) or 86400 seconds (old logs) */
         if (file_exists($htmlPath) && filemtime($htmlPath) > strtotime($now) - $cacheTime) {
             return readfile($htmlPath);
@@ -175,7 +152,7 @@ class Controller extends \Piwik\Plugin\Controller
             'maxScreen' => $maxScreen,
             'minDate'   => $minDate,
             'maxDate'   => $maxDate,
-            'logPath'   => self::$conf['logPath']
+            'logPath'   => Config::get('logPath')
         ]);
         $heatmapObject = $this->createHeatMap($target, $isRequestHeatMap, $browser, $minScreen, $maxScreen, $imagePath);
         $result = $heatmapObject->generate($width);
@@ -198,8 +175,7 @@ class Controller extends \Piwik\Plugin\Controller
     {
         // if you are not valid user, force login.
         Piwik::checkUserIsNotAnonymous();
-        $conf = $this->getConf();
-        $imagePath = $conf['cachePath'] . (isset($_GET['file']) ? str_replace('/', '', $_GET['file']) : '**unknown**');
+        $imagePath = Config::get('cachePath') . (isset($_GET['file']) ? str_replace('/', '', $_GET['file']) : '**unknown**');
 
         header('Content-Type: image/png');
         if (file_exists($imagePath)) {
@@ -213,12 +189,11 @@ class Controller extends \Piwik\Plugin\Controller
     {
         // if you are not valid user, force login.
         Piwik::checkUserIsNotAnonymous();
-        $config = self::$conf;
-        if ($config['flush']) {
+        if (Config::get('flush')) {
             $this->logger->clean();
         }
         $cacheCleaner = StaticContainer::get(CacheStorage::class);
-        $cacheCleaner->clean($config['cachePath']);
+        $cacheCleaner->clean(Config::get('cachePath'));
     }
 
     /**
@@ -251,7 +226,6 @@ class Controller extends \Piwik\Plugin\Controller
      */
     protected function isValidRequest()
     {
-        $config = self::$conf;
         $group = Common::getRequestVar('g');
         if (
             !isset($_GET['x'])
@@ -265,24 +239,16 @@ class Controller extends \Piwik\Plugin\Controller
             return "\"ClickHeat: Parameters or config error\"";
         }
         // check referer
-        if ($config['referers']) {
+        if (Config::get('referers')) {
             if (!isset($_SERVER['HTTP_REFERER'])) {
                 return 'ClickHeat: No domain in referer';
             }
-            if (is_array($config['referers'])) {
+            if (is_array(Config::get('referers'))) {
                 $referer = parse_url($_SERVER['HTTP_REFERER']);
-                if (!in_array($referer['host'], $config['referers'])) {
+                if (!in_array($referer['host'], Config::get('referers'))) {
                     return 'ClickHeat: Forbidden domain (' . $referer['host'] . '), change or remove security settings in the /config panel to allow this one';
                 }
             }
-        }
-        // check valid group
-        if (is_array($config['groups'])) {
-            if (!in_array($group, $config['groups'])) {
-                return 'ClickHeat: Forbidden group (' . $group . '), change or remove security settings in the config panel to allow this one';
-            }
-
-            return false;
         }
         // check browser
         $browser = Helper::getBrowser(Common::getRequestVar('b'));
@@ -339,19 +305,19 @@ class Controller extends \Piwik\Plugin\Controller
      */
     private function createHeatMap(DrawingTarget $target, $isRequestHeatMap, $browser, $minScreen, $maxScreen, $imagePath)
     {
-        $obj = HeatMapAdapterFactory::create(self::$conf['adapter']);
+        $obj = HeatMapAdapterFactory::create(Config::get('adapter'));
         $obj->setTarget($target);
         $obj->heatmap = $isRequestHeatMap;
         $obj->browser = $browser;
         $obj->minScreen = $minScreen;
         $obj->maxScreen = $maxScreen;
         $obj->layout = ['', 0, 0, 0]; // not support change layout at this time
-        $obj->memory = self::$conf['memory'] * 1048576;
-        $obj->step = self::$conf['step'];
-        $obj->dot = self::$conf['dot'];
-        $obj->palette = self::$conf['palette'];
-        $obj->path = self::$conf['cachePath'];
-        $obj->cache = self::$conf['cachePath'];
+        $obj->memory = Config::get('memory') * 1048576;
+        $obj->step = Config::get('step');
+        $obj->dot = Config::get('dot');
+        $obj->palette = Config::get('palette');
+        $obj->path = Config::get('cachePath');
+        $obj->cache = Config::get('cachePath');
         $obj->file = $imagePath . '-%d.png';
 
         return $obj;
@@ -363,7 +329,8 @@ class Controller extends \Piwik\Plugin\Controller
     private function getBrowser()
     {
         $browser = Common::getRequestVar('browser');
-        if (!isset(self::$conf['__browsersList'][$browser])) {
+        $supportedBrowsers = Config::get('__browsersList');
+        if (!isset($supportedBrowsers[$browser])) {
             $browser = 'all';
         }
 
@@ -376,18 +343,19 @@ class Controller extends \Piwik\Plugin\Controller
     private function getScreenSize()
     {
         $screen = Common::getRequestVar('screen', 0);
+        $screenConfig = Config::get('__screenSizes');
         $minScreen = 0;
         if ($screen < 0) {
             $width = abs($screen);
             $maxScreen = 3000;
         } else {
             $maxScreen = $screen;
-            if (!in_array($screen, self::$conf['__screenSizes']) || $screen === 0) {
+            if (!in_array($screen, $screenConfig) || $screen === 0) {
                 return false;
             }
-            for ($i = 1; $i < count(self::$conf['__screenSizes']); $i++) {
-                if (self::$conf['__screenSizes'][$i] === $screen) {
-                    $minScreen = self::$conf['__screenSizes'][$i - 1];
+            for ($i = 1; $i < count($screenConfig); $i++) {
+                if ($screenConfig[$i] === $screen) {
+                    $minScreen = $screenConfig[$i - 1];
                     break;
                 }
             }

@@ -55,24 +55,4 @@ class MysqlLogger extends AbstractLogger
         $this->model->cleanLogging($this->getConfig('flush'));
     }
 
-    /**
-     * @return string
-     */
-    public function getAdapterClass()
-    {
-        return 'Piwik\Plugins\ClickHeat\Adapter\MysqlHeatmapAdapter';
-    }
-
-    /**
-     * {@inheritdoc}
-     **/
-    public function getGroupUrl($requestGroup)
-    {
-        $group = $this->model->getGroup($requestGroup);
-        if (!$group) {
-            return false;
-        }
-
-        return $group['url'];
-    }
 }

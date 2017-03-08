@@ -5,21 +5,21 @@ namespace Piwik\Plugins\ClickHeat\Utils;
 
 trait Configurable
 {
-    protected $config = [];
+    public static $config = [];
 
     /**
      * @param array $configs
      *
      * @return bool
      */
-    public function initConfig(array $configs)
+    public static function initConfig(array $configs)
     {
-        if (!count($this->config) || !count($configs)) {
+        if (!count(self::$config) || !count($configs)) {
             return false;
         }
-        foreach ($this->config as $configKey => $value) {
+        foreach (self::$config as $configKey => $value) {
             if (isset($configs[$configKey])) {
-                $this->config[$configKey] = $configs[$configKey];
+                self::$config[$configKey] = $configs[$configKey];
             }
         }
 
@@ -27,16 +27,38 @@ trait Configurable
     }
 
     /**
-     * @param string $name
+     * @param $name
+     * @param $value
+     *
+     * @return $this
+     */
+    public static function set($name, $value)
+    {
+        if ($name) {
+            self::$config[$name] = $value;
+        } else {
+            self::$config = $value;
+        }
+    }
+
+    /**
+     * @param $name
      *
      * @return mixed
      */
-    public function getConfig($name = '')
+    public static function get($name = '')
     {
         if ($name) {
-            return isset($this->config[$name]) ? $this->config[$name] : null;
+            return isset(self::$config[$name]) ? self::$config[$name] : null;
         }
+        return self::$config;
+    }
 
-        return $this->config;
+    /**
+     * @return mixed
+     */
+    public static function all()
+    {
+        return self::get();
     }
 }

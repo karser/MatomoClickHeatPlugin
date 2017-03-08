@@ -39,6 +39,7 @@ interface LoggerModelInterface
 
     /**
      * @param $groupName
+     * @param $url
      * @param $siteId
      *
      * @return mixed

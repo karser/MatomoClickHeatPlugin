@@ -101,4 +101,17 @@ class MysqlHeatmapAdapter extends AbstractHeatmap
     {
         return $this->model->getGroupsBySite($idSite);
     }
+
+    /**
+     * {@inheritdoc}
+     **/
+    public function getGroupUrl($requestGroup)
+    {
+        $group = $this->model->getGroup($requestGroup);
+        if (!$group) {
+            return false;
+        }
+
+        return $group['url'];
+    }
 }

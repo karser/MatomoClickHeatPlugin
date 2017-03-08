@@ -13,4 +13,11 @@ interface HeatmapAdapterInterface
      * @return mixed
      */
     public function getGroups($idSite);
+
+    /**
+     * @param $requestGroup
+     *
+     * @return mixed
+     */
+    public function getGroupUrl($requestGroup);
 }

@@ -12,16 +12,35 @@ This plugin installer will make directories:
 * yourpiwik/tmp/cache/clickheat/cache
 * yourpiwik/tmp/cache/clickheat/logs.
 
-This plugin uses a different tracker. Please click on the link "JavaScript" and put the special Javascript codes into your website.
+And these MySQL tables : `piwik_click_heat`, `piwik_click_heat_group`
 
-## FAQ
-__What exactly is included in this feature ?__
+In case you want to use `Redis` as `Logger`, you need to install `predis/predis` via Composer to make this plugin works properly.
+```
+composer require predis/predis
+```
 
-* pick up a siteid
-* pick up a period
-* pick up a browser type
-* pick up a specific web page
+This plugin uses a different tracker. Please click on the link "JavaScript" in `Visitors > Click Heat` menu and put the special Javascript codes into your website. It is recommended to name your `Group` for easier management.
+## Logger and Adapter
+- Logger used to store logging data of users's clicks on webpages.
+- Adapter used to fetch logging data and showing in heat map report.
 
+Each logger and adapter is associated with a different data storage system (see in following sections). You can combine logger and adapter together for matching your needs and better performance, such as: use `RedisLogger` for fast serving and use `MySqlAdapter` for better data storage.
+   
+### Logger
+You can use different loggers to track clicks on webpage, currently supported:
+- `Piwik\Plugins\ClickHeat\Logger\FileSystemLogger` - store logging data in text files.
+- `Piwik\Plugins\ClickHeat\Logger\MySqlLogger` - store logging data in MySQL databases, tables needed for this logger will be created when you installed the plugin.
+- `Piwik\Plugins\ClickHeat\Logger\RedisLogger` - store logging data in Redis server.
+
+Currently `Redis` only used as a `Logger` and can not create heat map via it. So you need to run a command to import data to another `Adapter` like MySQL. 
+```
+./console clickheat:redis_to_msql
+```
+We recommend to put this command to a cron job so you don't need to run it manually.
+### Adapter
+
+
+## FAQs
 __And what functions are not included in this feature ?__
 
 * remove special addresses defined on the control panel.
@@ -31,14 +50,6 @@ __And what functions are not included in this feature ?__
 __Where is the coordinate information from the browser ?__
 
 ClickHeat plugin uses text files to record the coordinate data of each browser in directory: yourpiwik/tmp/cache/clickheat/logs.
-
-__What is "click.php returned a status code 403" ?__
-
-You have to perform the upgrade immediately to version 0.1.5. I forgot to put .htaccess.
-
-__After installing the plugin, Piwik Administration area shows "page not found 404 error".__
-
-This plugin doesn't consider the IIS. Sorry. And please delete the ClickHeat plugin (yourpiwik/plugins/ClickHeat) manually via FTP or Explorer. We are waiting patches for IIS.
 
 __Does it withstands high traffics ?__
 
@@ -56,30 +67,5 @@ __Showed a heatmap, but not overlay a heatmap to the target web page. Why ?__
 
 Check that your website does not set the HTTP header __X-FRAME-OPTIONS__ to __SAMEORIGIN__ as this will prevent this plugin from iframing your website for the heatmap report. Please see [Page Overlay Troubleshooting](http://piwik.org/docs/page-overlay/#page-overlay-troubleshooting), that is same problem.
 
-__How do I enable logging ?__
-
-Logging prepared for click.php. To debug it further please enable tracker debug mode in config.ini.php:
-
-```
-[Tracker]
-debug=1
-```
-You can see the log in yourpiwik/tmp/logs/piwik.log.
-
-## Changelog
-
-* 0.1.0 First beta
-* 0.1.2 to append faq
-* 0.1.3 to append faq
-* 0.1.5 to add .htaccess
-* 0.1.6
-    * security update
-    * rename clickheat.php to clickheat_config.php (Windows mixes up ClickHeat.php with clickheat.php)
-* 0.1.7 fixed bug
-* 0.1.9 fixed bug
-
 ## License
 GPL v3 or later
-
-## Support
-Please direct any feedback to [yamachan@piwikjapan.org](mailto:yamachan@piwikjapan.org).

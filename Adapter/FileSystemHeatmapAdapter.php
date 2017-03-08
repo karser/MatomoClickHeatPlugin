@@ -266,4 +266,31 @@ class FileSystemHeatmapAdapter extends AbstractHeatmap
 
         return $groups;
     }
+
+    /**
+     * @param $requestGroup
+     *
+     * @return mixed
+     */
+    /**
+     * {@inheritdoc}
+     */
+    public function getGroupUrl($requestGroup)
+    {
+        // TODO made logPath available as a config from DI
+        $logPath = $this->target->getLogPath();
+        if (!is_dir($logPath . $requestGroup)) {
+            return false;
+        }
+        $webPage = ['/'];
+        if (file_exists($logPath . $requestGroup . '/url.txt')) {
+            $f = @fopen($logPath . $requestGroup . '/url.txt', 'r');
+            if ($f !== false) {
+                $webPage = explode('>', trim(fgets($f, 1024)));
+                fclose($f);
+            }
+        }
+
+        return $webPage[0];
+    }
 }

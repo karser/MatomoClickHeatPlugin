@@ -22,12 +22,12 @@ class MysqlModel implements LoggerModelInterface
     /**
      * @var string
      */
-    private $table;
+    protected $table;
 
     /**
      * @var string
      */
-    private $groupTable;
+    protected $groupTable;
 
     public function __construct()
     {
@@ -51,15 +51,17 @@ class MysqlModel implements LoggerModelInterface
             'pos_y'       => $posY,
             'date'        => $date
         ];
-        $this->getDb()->insert($this->table, $data);
+        if ($this->getDb()->insert($this->table, $data)) {
+            return $this->getDb()->lastInsertId();
+        }
 
-        return $this->getDb()->lastInsertId();
+        return false;
     }
 
     /**
      * @return Db|Db\AdapterInterface|\Piwik\Tracker\Db
      */
-    private function getDb()
+    protected function getDb()
     {
         return Db::get();
     }
@@ -70,10 +72,12 @@ class MysqlModel implements LoggerModelInterface
         $groupTable = "
             `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
             `url` text NOT NULL,
+            `name` varchar(255) NOT NULL,
             `idsite` int(11) unsigned NOT NULL,
+            `import_hash` varchar(32) DEFAULT NULL,
             PRIMARY KEY (`id`)
-        )";
-        DbHelper::createTable(self::$rawPrefix, $groupTable);
+        ";
+        DbHelper::createTable(self::$rawGroupPrefix, $groupTable);
 
         // tracking table
         $table = "
@@ -84,16 +88,15 @@ class MysqlModel implements LoggerModelInterface
             `date` date NOT NULL,
             `browser` varchar(20) DEFAULT NULL,
             `group_id` int(10) unsigned NOT NULL,
-            PRIMARY KEY (`id`),
-            KEY `click_heat_group` (`group_id`),
-            CONSTRAINT `click_heat_group` FOREIGN KEY (`group_id`) REFERENCES `" . Common::prefixTable(self::$rawGroupPrefix) . "` (`id`)
-        )";
+            PRIMARY KEY (`id`)
+        ";
         DbHelper::createTable(self::$rawPrefix, $table);
     }
 
     public static function uninstall()
     {
         Db::dropTables(Common::prefixTable(self::$rawPrefix));
+        Db::dropTables(Common::prefixTable(self::$rawGroupPrefix));
     }
 
     /**

@@ -11,11 +11,12 @@
  */
 
 namespace Piwik\Plugins\ClickHeat;
+
 use Piwik\Plugins\ClickHeat\Model\MysqlModel;
 
 class ClickHeat extends \Piwik\Plugin
 {
-	function install()
+	public function install()
 	{
 		/** Create main cache paths */
 		$dir = PIWIK_INCLUDE_PATH.'/tmp/cache/clickheat/';

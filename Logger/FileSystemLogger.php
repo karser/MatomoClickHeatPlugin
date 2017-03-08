@@ -118,32 +118,4 @@ class FileSystemLogger extends AbstractLogger
         return $folder . '/' . date('Y-m-d') . '.log';
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getAdapterClass()
-    {
-        return 'Piwik\Plugins\ClickHeat\Adapter\FileSystemHeatmapAdapter';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getGroupUrl($requestGroup)
-    {
-        $logPath = $this->getConfig('logPath');
-        if (!is_dir($logPath . $requestGroup)) {
-            return false;
-        }
-        $webPage = ['/'];
-        if (file_exists($logPath . $requestGroup . '/url.txt')) {
-            $f = @fopen($logPath . $requestGroup . '/url.txt', 'r');
-            if ($f !== false) {
-                $webPage = explode('>', trim(fgets($f, 1024)));
-                fclose($f);
-            }
-        }
-
-        return $webPage[0];
-    }
 }

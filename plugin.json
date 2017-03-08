@@ -1,6 +1,6 @@
 {
     "name": "ClickHeat",
-    "homepage": "http:\/\/8bitrockr.com\/",
+    "homepage": "https:\/\/github.com\/trungtnm\/clickheat",
     "version": "0.1.9",
     "description": "ClickHeat is a visual heatmap of clicks on a HTML page. This plugin based on Dugwood's ClickHeat version 1.14. Plugin not consider IIS. Sorry.",
     "theme": true,

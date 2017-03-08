@@ -39,8 +39,8 @@ class RedisModel implements LoggerModelInterface
             'date'        => $date
         ];
         $keyCache = $this->getLogKey($siteId, $groupId);
-
-        return $this->client->lpush($keyCache, json_encode($data));
+        $hash = microtime(true);
+        return $this->client->hset($keyCache, $hash, json_encode($data));
     }
 
     /**
@@ -64,7 +64,7 @@ class RedisModel implements LoggerModelInterface
         $keyCache = $this->getGroupKey($siteId);
         $group = $this->client->hget($keyCache, md5($groupName));
         if ($group) {
-            return json_decode($group);
+            return json_decode($group, 1);
         }
 
         return false;
@@ -109,4 +109,55 @@ class RedisModel implements LoggerModelInterface
         return $this->client->hset($keyCache, md5($groupName), $data);
     }
 
+    /**
+     * @param $siteID
+     *
+     * @return array
+     */
+    public function getGroups($siteID)
+    {
+        $cacheKey = $this->getGroupKey($siteID);
+        $groups = $this->client->hgetall($cacheKey);
+        if ($groups) {
+            foreach ($groups as $hash => $group) {
+                $groups[$hash] = json_decode($group, 1);
+            }
+            return $groups;
+        }
+
+        return [];
+    }
+
+    /**
+     * @param $siteId
+     * @param $groupName
+     *
+     * @return array
+     */
+    public function getData($siteId, $groupName)
+    {
+        $cacheKey = $this->getLogKey($siteId, $groupName);
+        $logs = $this->client->hgetall($cacheKey);
+        $results = [];
+        if ($logs) {
+            foreach ($logs as $attribute => $log) {
+                $results[$attribute] = json_decode($log, 1);
+            }
+        }
+        return $results;
+    }
+
+    /**
+     * @param $siteId
+     * @param $groupName
+     * @param $hashField
+     *
+     * @return mixed
+     */
+    public function removeLoggingData($siteId, $groupName, $hashField)
+    {
+        $cacheKey = $this->getLogKey($siteId, $groupName);
+
+        return $this->client->hdel($cacheKey, $hashField);
+    }
 }
