@@ -1,8 +1,8 @@
 {
-    "name": "ClickHeat 3",
+    "name": "ClickHeat",
     "homepage": "https:\/\/github.com\/trungtnm\/clickheat",
     "version": "1.0",
-    "description": "ClickHeat 3 is a visual heatmap of clicks on a HTML page for Piwik 3.x. This plugin based on Dugwood's ClickHeat version 1.14. Plugin not consider IIS at this moment.",
+    "description": "ClickHeat 3 is a visual heatmap of clicks on a HTML page for Piwik 3.x. This plugin based on Dugwood's ClickHeat version 1.14 and forked from PiwikJapan ClickHeat plugin, which is only compatible with Piwik 2x.",
     "theme": true,
     "keywords": [
         "clickheat",
@@ -33,8 +33,7 @@
         }
     ],
     "support": {
-        "email": "yamachan@piwikjapan.org",
-        "irc": "@PiwikJapan"
+        "email": "trungtran07@gmail.com"
     },
     "stylesheet": "libs/styles/piwik.css",
     "javascript": ["libs/js/admin.js"]
