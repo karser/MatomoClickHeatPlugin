@@ -207,23 +207,9 @@ function updateJs() {
     var str = '',
         language = (navigator.language && navigator.language === 'fr' ? 'fr' : 'com'),
         addReturn = document.getElementById('jsShort').checked ? '' : '<br />',
-        linkList = [],
         rand;
     str += '&lt;script type="text/javascript" src="';
     str += scriptPath + 'js/clickheat.js"&gt;&lt;/script&gt;' + addReturn;
-    if (language === 'fr') {
-        linkList = ['&lt;a href="http://www.dugwood.fr/clickheat/index.html"&gt;ClickHeat&lt;/a&gt;', '&lt;a href="http://www.dugwood.fr/index.html"&gt;Module Heatmap&lt;/a&gt;', '&lt;a href="http://www.dugwood.fr/index.html"&gt;CMS&lt;/a&gt;', '&lt;a href="http://www.dugwood.fr/index.html"&gt;Outils Open Source&lt;/a&gt;'];
-    }
-    else {
-        linkList = ['&lt;a href="http://www.dugwood.com/clickheat/index.html"&gt;ClickHeat&lt;/a&gt;', '&lt;a href="http://www.dugwood.com/index.html"&gt;Heatmap plugin&lt;/a&gt;', '&lt;a href="http://www.dugwood.com/index.html"&gt;CMS&lt;/a&gt;', '&lt;a href="http://www.dugwood.com/index.html"&gt;Open Source Sofware&lt;/a&gt;'];
-    }
-    if (document.getElementById('jsShowImage').checked) {
-        str += '&lt;a href="http://www.dugwood.' + language + '/clickheat/index.html" title="ClickHeat: clicks heatmap"&gt;&lt;img src="' + scriptPath + 'images/logo.png" width="80" height="15" border="0" alt="ClickHeat : track clicks" /&gt;&lt;/a&gt;' + addReturn;
-    }
-    else {
-        rand = Math.floor(Math.random() * linkList.length);
-        str += '&lt;noscript&gt;&lt;p&gt;' + linkList[rand] + '&lt;/p&gt;&lt;/noscript&gt;' + addReturn;
-    }
     str += '&lt;script type="text/javascript"&gt;&lt;!--<br />';
     str += 'clickHeatSite = ';
     /*jslint regexp: false*/
@@ -236,21 +222,13 @@ function updateJs() {
         str += '\'<span class="error">' + document.getElementById('jsSite').value.replace(/[^a-z0-9\-_\.]+/gi, '.') + '</span>\'';
     }
     str += ';' + addReturn + 'clickHeatGroup = ';
-    if (document.getElementById('jsGroup1').checked) {
-        str += '\'<span class="error">' + document.getElementById('jsGroup').value.replace(/[^a-z0-9\-_\.]+/gi, '.') + '</span>\'';
-    }
-    if (document.getElementById('jsGroup2').checked) {
-        str += '(document.title == \'\' ? \'-none-\' : encodeURIComponent(document.title))';
-    }
-    if (document.getElementById('jsGroup3').checked) {
-        str += 'encodeURIComponent(window.location.pathname+window.location.search)';
-    }
+    str += '\'<span class="error">' + document.getElementById('jsGroup').value.replace(/[^a-z0-9\-_\.]+/gi, '.') + '</span>\'';
     str += ';' + addReturn;
     if (document.getElementById('jsQuota').value !== '0') {
         str += 'clickHeatQuota = <span class="error">' + document.getElementById('jsQuota').value.replace(/[^0-9]*/g, '') + '</span>;' + addReturn;
     }
     /*jslint regexp: true*/
-    str += 'clickHeatServer = \'' + scriptPath + 'click.php\';' + addReturn;
+    str += 'clickHeatServer = \'' + piwik.piwik_url  + 'index.php?module=ClickHeat&action=click\';' + addReturn;
     str += 'initClickHeat(); //--&gt;<br />';
     str += '&lt;/script&gt;';
     document.getElementById('clickheat-js').innerHTML = str;
