@@ -39,8 +39,6 @@ class Controller extends \Piwik\Plugin\Controller
     public function init()
     {
         Config::init();
-        // if you are not valid user, force login.
-        Piwik::checkUserIsNotAnonymous();
         if (isset($_SERVER['REQUEST_URI']) && $_SERVER['REQUEST_URI'] !== '') {
             $realPath = &$_SERVER['REQUEST_URI'];
         } elseif (isset($_SERVER['SCRIPT_NAME']) && $_SERVER['SCRIPT_NAME'] !== '') {
@@ -288,7 +286,7 @@ class Controller extends \Piwik\Plugin\Controller
      *
      * @return string
      */
-    function error($error)
+    private function error($error)
     {
         return '&nbsp;<div style="line-height:20px;"><span class="error">' . $error . '</span></div>';
     }
