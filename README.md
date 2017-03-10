@@ -6,11 +6,16 @@ ClickHeat is a visual heatmap of clicks on a HTML page, showing hot and cold cli
 __Plugin not consider the IIS.__ Sorry. We are waiting patches for IIS.
 
 ## Installation
-Install it via Piwik Marketplace.
-
+   Not yet available in `Piwik Marketplace`, you have to copy the source code of this plugin to your `piwik/plugins` folder.
+   Since a weird issue, Piwik does not recognize this plugin, you have to manually add it to your Piwik `config.ini.php` as below:
+```
+...
+Plugins[] = ClickHeat
+```
+  Then browse your Piwik `System > Plugins`, this plugin will be automatically installed.
 This plugin installer will make directories:
-* yourpiwik/tmp/cache/clickheat/cache
-* yourpiwik/tmp/cache/clickheat/logs.
+* piwik/tmp/cache/clickheat/cache
+* piwik/tmp/cache/clickheat/logs.
 
 And these MySQL tables : `piwik_click_heat`, `piwik_click_heat_group`
 
@@ -24,8 +29,11 @@ This plugin uses a different tracker. Please click on the link "JavaScript" in `
 - Logger used to store logging data of users's clicks on webpages.
 - Adapter used to fetch logging data and showing in heat map report.
 
-Each logger and adapter is associated with a different data storage system (see in following sections). You can combine logger and adapter together for matching your needs and better performance, such as: use `RedisLogger` for fast serving and use `MySqlAdapter` for better data storage.
-   
+    Each logger and adapter is associated with a different data storage system (see in following sections). You can combine logger and adapter together for matching your needs and better performance, such as: use `RedisLogger` for fast serving and use `MySqlAdapter` for better data storage.
+    
+    Available loggers: `Redis`, `MySQL`, `File system`
+    Available adapters: `MySQL`, `File system`
+    
 ### Logger
 You can use different loggers to track clicks on webpage, currently supported:
 - `Piwik\Plugins\ClickHeat\Logger\FileSystemLogger` - store logging data in text files.
@@ -37,8 +45,14 @@ Currently `Redis` only used as a `Logger` and can not create heat map via it. So
 ./console clickheat:redis_to_msql
 ```
 We recommend to put this command to a cron job so you don't need to run it manually.
+```
+# cron job that run every 5minutes
+*/5 * * * * /var/www/piwik/console clickheat:redis_to_msql
+```
 ### Adapter
-
+After logging clicks of webpages, adapters  used to retrieve data from associated storing system and generate heat map report, currently supported `Adapter`:
+- `Piwik\Plugins\ClickHeat\Adapter\FileSystemAdapter`
+- `Piwik\Plugins\ClickHeat\Adapter\MySqlAdapter`
 
 ## FAQs
 __And what functions are not included in this feature ?__
@@ -66,6 +80,13 @@ Plugin places heatmap images in the cache directory: yourpiwik/tmp/cache/clickhe
 __Showed a heatmap, but not overlay a heatmap to the target web page. Why ?__
 
 Check that your website does not set the HTTP header __X-FRAME-OPTIONS__ to __SAMEORIGIN__ as this will prevent this plugin from iframing your website for the heatmap report. Please see [Page Overlay Troubleshooting](http://piwik.org/docs/page-overlay/#page-overlay-troubleshooting), that is same problem.
+
+## TODO
+
+ - Refactor code.
+ - Correct File System logger and adapter.
+ - Implement Piwik 3 System settings.
+ - Submit to Marketplace.
 
 ## License
 GPL v3 or later
