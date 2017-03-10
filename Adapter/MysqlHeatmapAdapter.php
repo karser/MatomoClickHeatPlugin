@@ -35,7 +35,7 @@ class MysqlHeatmapAdapter extends AbstractHeatmap
         if (!$this->target->getGroupId()) {
             throw new \Exception("Please set target first with correct `group_id` provided.");
         }
-//        $this->maxY = $this->model->getDrawingMaxY($this->target);
+       $this->maxY = $this->model->getDrawingMaxY($this->target);
 
         return true;
     }

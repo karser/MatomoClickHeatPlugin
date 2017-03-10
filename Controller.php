@@ -16,12 +16,14 @@ use Piwik\Container\StaticContainer;
 use Piwik\Cookie;
 use Piwik\IP;
 use Piwik\Network\IPUtils;
+use Piwik\NoAccessException;
 use Piwik\Plugins\ClickHeat\Adapter\HeatMapAdapterFactory;
 use Piwik\Plugins\ClickHeat\Logger\AbstractLogger;
 use Piwik\Plugins\ClickHeat\Utils\AbstractHeatmap;
 use Piwik\Plugins\ClickHeat\Utils\CacheStorage;
 use Piwik\Plugins\ClickHeat\Utils\DrawingTarget;
 use Piwik\Plugins\ClickHeat\Utils\Helper;
+use Piwik\Plugins\SitesManager\API;
 use Piwik\Site;
 use Piwik\Translate;
 use Piwik\Piwik;
@@ -269,13 +271,18 @@ class Controller extends \Piwik\Plugin\Controller
         if ($adminCookie->isCookieFound()) {
             return "ClickHeat: OK, but click not logged as you selected it in the admin panel";
         } else {
-            $site = new Site(Common::getRequestVar('s'));
-            if ($excludedIps = $site->getExcludedIps()) {
-                $ip = IPUtils::stringToBinaryIP(\Piwik\Network\IP::fromStringIP(IP::getIpFromHeader()));
-                if (Helper::isIpInRange($ip, $excludedIps)) {
-                    return 'OK, but click not logged as you prevent this IP to be tracked in Piwik\'s configuration';
+            try {
+                $site = API::getInstance()->getSiteFromId(Common::getRequestVar('s'));
+                if ($excludedIps = $site->getExcludedIps()) {
+                    $ip = IPUtils::stringToBinaryIP(\Piwik\Network\IP::fromStringIP(IP::getIpFromHeader()));
+                    if (Helper::isIpInRange($ip, $excludedIps)) {
+                        return 'OK, but click not logged as you prevent this IP to be tracked in Piwik\'s configuration';
+                    }
                 }
+            } catch (NoAccessException $e) {
+                // just try to access excluded IPs
             }
+
         }
 
         return false;
