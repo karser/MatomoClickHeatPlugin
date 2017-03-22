@@ -394,18 +394,18 @@ class Controller extends \Piwik\Plugin\Controller
         switch ($range) {
             case 'd': {
                 $maxDate = $minDate;
-                $cacheTime = date('dmy', $requestDate) !== date('dmy') ? 86400 : 120;
+                $cacheTime = date('dmy', $minDate) !== date('dmy') ? 86400 : 120;
                 break;
             }
             case 'w': {
                 $maxDate = date('Y-m-d', strtotime($minDate . " +7 days"));
-                $cacheTime = date('Wy', $requestDate) !== date('Wy') ? 86400 : 120;
+                $cacheTime = date('Wy', $minDate) !== date('Wy') ? 86400 : 120;
                 break;
             }
             case 'm': {
-                $days = date('t', $requestDate);
+                $days = date('t', $minDate);
                 $maxDate = date('Y-m-d', strtotime($minDate . " +{$days} days"));
-                $cacheTime = date('my', $requestDate) !== date('my') ? 86400 : 120;
+                $cacheTime = date('my', $minDate) !== date('my') ? 86400 : 120;
                 break;
             }
         }
