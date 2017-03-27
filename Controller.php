@@ -274,7 +274,7 @@ class Controller extends \Piwik\Plugin\Controller
     private function isSkippable()
     {
         $adminCookie = new Cookie('clickheat-admin');
-        if (!$adminCookie->isCookieFound()) {
+        if ($adminCookie->isCookieFound()) {
             return "ClickHeat: OK, but click not logged as you selected it in the admin panel";
         } else {
             try {
