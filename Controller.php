@@ -238,17 +238,23 @@ class Controller extends \Piwik\Plugin\Controller
         ) {
             return "\"ClickHeat: Parameters or config error\"";
         }
+
         // check referer
-        if (Config::get('referers')) {
+        if (Config::get('checkReferrer')) {
             if (!isset($_SERVER['HTTP_REFERER'])) {
                 return 'ClickHeat: No domain in referer';
             }
-            if (is_array(Config::get('referers'))) {
-                $referer = parse_url($_SERVER['HTTP_REFERER']);
-                if (!in_array($referer['host'], Config::get('referers'))) {
-                    return 'ClickHeat: Forbidden domain (' . $referer['host'] . '), change or remove security settings in the /config panel to allow this one';
+            try {
+                $site = API::getInstance()->getSiteFromId(Common::getRequestVar('s'));
+                $siteHost = parse_url($site);
+                $refererHost = parse_url($_SERVER['HTTP_REFERER']);
+                if (strtolower($siteHost['host']) != strtolower($refererHost['host'])) {
+                    return 'ClickHeat: Forbidden domain (' . $refererHost['host'] . '), change or remove security settings in the /config panel to allow this one';
                 }
+            } catch (NoAccessException $e) {
+                // try to access site info and compare host name
             }
+
         }
         // check browser
         $browser = Helper::getBrowser(Common::getRequestVar('b'));
@@ -268,21 +274,20 @@ class Controller extends \Piwik\Plugin\Controller
     private function isSkippable()
     {
         $adminCookie = new Cookie('clickheat-admin');
-        if ($adminCookie->isCookieFound()) {
+        if (!$adminCookie->isCookieFound()) {
             return "ClickHeat: OK, but click not logged as you selected it in the admin panel";
         } else {
             try {
                 $site = API::getInstance()->getSiteFromId(Common::getRequestVar('s'));
-                if ($excludedIps = $site->getExcludedIps()) {
+                if ($excludedIps = $site['excluded_ips']) {
                     $ip = IPUtils::stringToBinaryIP(\Piwik\Network\IP::fromStringIP(IP::getIpFromHeader()));
-                    if (Helper::isIpInRange($ip, $excludedIps)) {
+                    if (Helper::isIpInRange($ip, explode(',', $excludedIps))) {
                         return 'OK, but click not logged as you prevent this IP to be tracked in Piwik\'s configuration';
                     }
                 }
             } catch (NoAccessException $e) {
                 // just try to access excluded IPs
             }
-
         }
 
         return false;

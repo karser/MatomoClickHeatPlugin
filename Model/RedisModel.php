@@ -14,15 +14,16 @@ class RedisModel implements LoggerModelInterface
     protected $client;
 
     /**
-     * @param $config
+     * @param Client $client
      *
-     * @return Client
+     * @return $this
      */
-    public function createClient($config)
+    public function setClient(Client $client)
     {
-        $this->client = new Client($config);
-    }
+        $this->client = $client;
 
+        return $this;
+    }
     /**
      * {@inheritdoc}
      */

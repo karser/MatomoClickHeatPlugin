@@ -12,24 +12,31 @@ class Config
      */
     public static function init()
     {
+        $settings = new SystemSettings();
+        self::mergeSystemSettings($settings);
         self::$config = self::$configurations;
         self::set('logPath', PIWIK_INCLUDE_PATH . self::get('logPath'));
         self::set('cachePath', PIWIK_INCLUDE_PATH . self::get('cachePath'));
-//        TODO: refactor configuration
+        //        TODO: refactor configuration
     }
 
-     static $configurations = [
-        'redis'          => "tcp://redis:6379", // URI string
+    static $configurations = [
+        // will be override by system settings
+        'checkReferrer'       => false,
+        'redis'          => [
+            'sentinel' => '',
+            'password' => '',
+            'database' => 0,
+            'host'     => 'localhost',
+            'port'     => '6379',
+        ],
+
+        // TODO: below configurations need to be refactored
         'logger'         => 'Piwik\Plugins\ClickHeat\Logger\RedisLogger',
         'adapter'        => 'Piwik\Plugins\ClickHeat\Adapter\MysqlHeatmapAdapter',
         'logPath'        => '/tmp/cache/clickheat/logs/',
         'cachePath'      => '/tmp/cache/clickheat/cache/',
-        'referers'       => true,
         'fileSize'       => 0,
-        'adminLogin'     => '',
-        'adminPass'      => '',
-        'viewerLogin'    => '',
-        'viewerPass'     => '',
         'memory'         => 50,
         'step'           => 5,
         'dot'            => 19,
@@ -43,6 +50,24 @@ class Config
         'alpha'          => 80,
         'version'        => '0.1.9',
         '__screenSizes'  => [0/** Must start with 0 */, 640, 800, 1024, 1280, 1440, 1600, 1800],
-        '__browsersList' => ['all' => '', 'firefox' => 'Firefox', 'chrome' => 'Google Chrome', 'msie' => 'Internet Explorer', 'safari' => 'Safari', 'opera' => 'Opera', 'kmeleon' => 'K-meleon', 'unknown' => '']
+        '__browsersList' => ['all' => '', 'firefox' => 'Firefox', 'chrome' => 'Google Chrome', 'msie' => 'Internet Explorer', 'safari' => 'Safari', 'opera' => 'Opera', 'kmeleon' => 'K-meleon', 'unknown' => ''],
     ];
+
+    /**
+     * @param SystemSettings $settings
+     */
+    private static function mergeSystemSettings(SystemSettings $settings)
+    {
+        $sentinelMaster = $settings->useSentinelBackend->getValue() ? $settings->sentinelMasterName->getValue() : null;
+        $redisConfigs = [
+            'sentinel' => $sentinelMaster,
+            'database' => $settings->redisDatabase->getValue(),
+            'password' => $settings->redisPassword->getValue() ? $settings->redisPassword->getValue() : null ,
+            'host'     => $settings->redisHost->getValue(),
+            'port'     => $settings->redisPort->getValue(),
+        ];
+        self::$configurations['redis'] = $redisConfigs;
+
+        self::$configurations['checkReferrer'] = $settings->checkReferrer->getValue();
+    }
 }
