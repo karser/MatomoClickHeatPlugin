@@ -42,14 +42,16 @@ trait Configurable
     }
 
     /**
-     * @param $name
+     * @param string $name
+     *
+     * @param null   $default
      *
      * @return mixed
      */
-    public static function get($name = '')
+    public static function get($name = '', $default = null)
     {
         if ($name) {
-            return isset(self::$config[$name]) ? self::$config[$name] : null;
+            return isset(self::$config[$name]) ? self::$config[$name] : $default;
         }
         return self::$config;
     }

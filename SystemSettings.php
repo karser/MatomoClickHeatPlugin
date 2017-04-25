@@ -44,6 +44,16 @@ class SystemSettings extends \Piwik\Settings\Plugin\SystemSettings
      */
     public $checkReferrer;
 
+    /**
+     * @var Setting
+     */
+    public $memory;
+
+    /**
+     * @var Setting
+     */
+    public $timeout;
+
     protected function init()
     {
         $this->checkReferrer = $this->createCheckReferrer();
@@ -54,6 +64,8 @@ class SystemSettings extends \Piwik\Settings\Plugin\SystemSettings
         $this->redisTimeout = $this->createRedisTimeoutSetting();
         $this->redisDatabase = $this->createRedisDatabaseSetting();
         $this->redisPassword = $this->createRedisPasswordSetting();
+        $this->memory = $this->createMemorySetting();
+        $this->timeout = $this->createTimeoutSetting();
     }
 
     public function isUsingSentinelBackend()
@@ -291,6 +303,31 @@ class SystemSettings extends \Piwik\Settings\Plugin\SystemSettings
             $field->uiControl = FieldConfig::UI_CONTROL_CHECKBOX;
             $field->uiControlAttributes = array('size' => 3);
             $field->inlineHelp = 'If enabled, only requests to tracker that have referrer in header and match site\'s hostname are accepted.';
+        });
+    }
+
+    private function createMemorySetting()
+    {
+        return $this->makeSetting('memory', 0, FieldConfig::TYPE_INT, function (FieldConfig $field) {
+            $field->title = 'Memory limit (MB)';
+            $field->uiControl = FieldConfig::UI_CONTROL_TEXT;
+            $field->uiControlAttributes = array('size' => 10);
+            $field->inlineHelp = 'PHP memory limit in MB, set to <b>0</b> to use server configuration. Try to increase this when got an error of leaking memory.';
+            $field->validate = function ($value) {
+                if ($value < 0) {
+                    throw new \Exception('Memory limit must be equal or greater than 0');
+                }
+            };
+        });
+    }
+
+    private function createTimeoutSetting()
+    {
+        return $this->makeSetting('timeout', 180, FieldConfig::TYPE_INT, function (FieldConfig $field) {
+            $field->title = 'Timeout (s)';
+            $field->uiControl = FieldConfig::UI_CONTROL_TEXT;
+            $field->uiControlAttributes = array('size' => 10);
+            $field->inlineHelp = 'PHP timeout in seconds, set to <b>0</b> to use server configuration.';
         });
     }
 

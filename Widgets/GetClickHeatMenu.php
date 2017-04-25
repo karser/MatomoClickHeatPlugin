@@ -6,6 +6,7 @@
  * @license http://www.gnu.org/licenses/gpl-3.0.html GPL v3 or later
  *
  */
+
 namespace Piwik\Plugins\ClickHeat\Widgets;
 
 use Piwik\Common;
@@ -83,60 +84,29 @@ class GetClickHeatMenu extends Widget
             $__selectBrowsers[$label] = $label === 'unknown' ? Piwik::Translate('ClickHeat_LANG_UNKNOWN') : $name;
         }
 
-        /** Date */
-        $date = strtotime(Common::getRequestVar('date'));
-        if ($date === false) {
-            if ($conf['yesterday'] === true) {
-                $date = mktime(0, 0, 0, date('m'), date('d') - 1, date('Y'));
-            } else {
-                $date = time();
-            }
-        }
-        $__day = (int) date('d', $date);
-        $__month = (int) date('m', $date);
-        $__year = (int) date('Y', $date);
-
-        $range = Common::getRequestVar('period');
-        $range = $range[0];
-
-        if (!in_array($range, ['d', 'm', 'w'])) {
-            $range = 'd';
-        }
-        if ($range === 'w') {
-            $startDay = $conf['start'] === 'm' ? 1 : 0;
-            while (date('w', $date) != $startDay) {
-                $date = mktime(0, 0, 0, date('m', $date), date('d', $date) - 1, date('Y', $date));
-            }
-            $__day = (int) date('d', $date);
-            $__month = (int) date('m', $date);
-            $__year = (int) date('Y', $date);
-        } elseif ($range === 'm') {
-            $__day = 1;
-        }
-
         $groups = $this->adapter->getGroups($idSite);
 
         $view = new View('@ClickHeat/view');
         $port = Helper::getServerPort();
-        $view->assign('clickheat_host', 'http://' . $_SERVER['SERVER_NAME'] . $port);
-        $view->assign('clickheat_path', CLICKHEAT_PATH);
-        $view->assign('clickheat_index', CLICKHEAT_INDEX_PATH);
-        $view->assign('clickheat_groups', $groups);
-        $view->assign('clickheat_browsers', $__selectBrowsers);
-        $view->assign('clickheat_screens', $__selectScreens);
-        $view->clickheat_loading = str_replace('\'', '\\\'', Piwik::Translate('ClickHeat_LANG_ERROR_LOADING'));
-        $view->clickheat_cleaner = str_replace('\'', '\\\'', Piwik::Translate('ClickHeat_LANG_CLEANER_RUNNING'));
-        $view->clickheat_admincookie = str_replace('\'', '\\\'', Piwik::Translate('ClickHeat_LANG_JAVASCRIPT_ADMIN_COOKIE'));
-        $view->clickheat_alpha = $conf['alpha'];
-        $view->clickheat_iframes = $conf['hideIframes'] === true ? 'true' : 'false';
-        $view->clickheat_flashes = $conf['hideFlashes'] === true ? 'true' : 'false';
-        $view->clickheat_force_heatmap = $conf['heatmap'] === true ? ' checked="checked"' : '';
-        $view->clickheat_jsokay = str_replace('\'', '\\\'', Piwik::Translate('ClickHeat_LANG_ERROR_JAVASCRIPT'));
-        $view->clickheat_day = $__day;
-        $view->clickheat_month = $__month;
-        $view->clickheat_year = $__year;
-        $view->clickheat_range = $range;
-        $view->clickheat_menu = '';
+        $data = [
+            'clickheat_host'          => 'http://' . $_SERVER['SERVER_NAME'] . $port,
+            'clickheat_path'          => CLICKHEAT_PATH,
+            'clickheat_index'         => CLICKHEAT_INDEX_PATH,
+            'clickheat_groups'        => $groups,
+            'clickheat_browsers'      => $__selectBrowsers,
+            'clickheat_screens'       => $__selectScreens,
+            'clickheat_loading'       => str_replace('\'', '\\\'', Piwik::Translate('ClickHeat_LANG_ERROR_LOADING')),
+            'clickheat_cleaner'       => str_replace('\'', '\\\'', Piwik::Translate('ClickHeat_LANG_CLEANER_RUNNING')),
+            'clickheat_admincookie'   => str_replace('\'', '\\\'', Piwik::Translate('ClickHeat_LANG_JAVASCRIPT_ADMIN_COOKIE')),
+            'clickheat_alpha'         => $conf['alpha'],
+            'clickheat_iframes'       => $conf['hideIframes'] === true ? 'true' : 'false',
+            'clickheat_flashes'       => $conf['hideFlashes'] === true ? 'true' : 'false',
+            'clickheat_force_heatmap' => $conf['heatmap'] === true ? ' checked="checked"' : '',
+            'clickheat_jsokay'        => str_replace('\'', '\\\'', Piwik::Translate('ClickHeat_LANG_ERROR_JAVASCRIPT')),
+            'clickheat_range'         => Common::getRequestVar('period'),
+            'clickheat_date'          => Common::getRequestVar('date'),
+        ];
+        $view->assign($data);
 
         return $view->render();
     }

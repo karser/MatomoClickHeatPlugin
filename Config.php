@@ -1,4 +1,5 @@
 <?php
+
 namespace Piwik\Plugins\ClickHeat;
 
 use Piwik\Plugins\ClickHeat\Utils\Configurable;
@@ -22,7 +23,7 @@ class Config
 
     static $configurations = [
         // will be override by system settings
-        'checkReferrer'       => false,
+        'checkReferrer'  => false,
         'redis'          => [
             'sentinel' => '',
             'password' => '',
@@ -37,7 +38,8 @@ class Config
         'logPath'        => '/tmp/cache/clickheat/logs/',
         'cachePath'      => '/tmp/cache/clickheat/cache/',
         'fileSize'       => 0,
-        'memory'         => 50,
+        'memory'         => 0,
+        'timeout'        => 180,
         'step'           => 5,
         'dot'            => 19,
         'flush'          => 40, //days
@@ -62,12 +64,13 @@ class Config
         $redisConfigs = [
             'sentinel' => $sentinelMaster,
             'database' => $settings->redisDatabase->getValue(),
-            'password' => $settings->redisPassword->getValue() ? $settings->redisPassword->getValue() : null ,
+            'password' => $settings->redisPassword->getValue() ? $settings->redisPassword->getValue() : null,
             'host'     => $settings->redisHost->getValue(),
             'port'     => $settings->redisPort->getValue(),
         ];
         self::$configurations['redis'] = $redisConfigs;
-
         self::$configurations['checkReferrer'] = $settings->checkReferrer->getValue();
+        self::$configurations['memory'] = $settings->memory->getValue();
+        self::$configurations['timeout'] = $settings->timeout->getValue();
     }
 }

@@ -8,7 +8,7 @@
 var currentAlpha = 80,
     lastDayOfMonth = 0,
     weekDays = [],
-    currentDate = [0, 0, 0, 0, 0, 0],
+    requestedDate = '',
     currentRange = 'd',
     currentWidth = 0,
     pleaseWait = '',
@@ -19,7 +19,8 @@ var currentAlpha = 80,
     hideFlashes = true,
     isPiwikModule = false,
     scriptPath = '',
-    scriptIndexPath = '';
+    scriptIndexPath = '',
+    heatmapGenerating = false;
 
 /* Show layout's parameters */
 function showRadioLayout() {
@@ -57,7 +58,8 @@ function getTop(obj) {
 
 /* Resize the div relative to window height and selected screen size */
 function resizeDiv() {
-    var oD = document.documentElement && document.documentElement.clientHeight !== 0 ? document.documentElement : document.body, iH = oD.innerHeight || oD.clientHeight, iW = oD.innerWidth || oD.clientWidth;
+    var oD = document.documentElement && document.documentElement.clientHeight !== 0 ? document.documentElement : document.body,
+        iH = oD.innerHeight || oD.clientHeight, iW = oD.innerWidth || oD.clientWidth;
     // document.getElementById('overflowDiv').style.height = (iH < 300 ? 400 : iH) - getTop(document.getElementById('overflowDiv')) + 'px';
     /** Width of main display */
     iW = iW < 300 ? 400 : iW;
@@ -71,31 +73,13 @@ function resizeDiv() {
     document.getElementById('webPageFrame').style.width = currentWidth - 25 + 'px';
 }
 
-/* Ajax object */
-function getXmlHttp() {
-    var xmlhttp = false;
-    try {
-        xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
-    }
-    catch (e) {
-        try {
-            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-        }
-        catch (oc) {
-            xmlhttp = null;
-        }
-    }
-    if (!xmlhttp && typeof(XMLHttpRequest) !== 'undefined') {
-        xmlhttp = new XMLHttpRequest();
-    }
-    return xmlhttp;
-}
-
 /* Ajax request to update PNGs */
 function updateHeatmap() {
-    var xmlhttp, screen = 0;
+    if (heatmapGenerating) {
+        return;
+    }
+    var screen = 0;
     document.getElementById('pngDiv').innerHTML = '&nbsp;<div style="line-height:20px"><span class="error">' + pleaseWait + '</span></div>';
-    xmlhttp = getXmlHttp();
     var selectedGroup = cleanInput($('#formGroup select:eq(0)').val());
     var selectedScreen = cleanInput($('#formScreen select:eq(0)').val());
     var selectedBrowser = cleanInput($('#formBrowser select:eq(0)').val());
@@ -104,86 +88,21 @@ function updateHeatmap() {
     } else {
         screen = selectedScreen;
     }
-    xmlhttp.open('GET', scriptIndexPath + 'action=generate&group=' + selectedGroup + '&screen=' + screen + '&browser=' + selectedBrowser + '&date=' + currentDate[2] + '-' + currentDate[1] + '-' + currentDate[0] + '&range=' + currentRange + '&heatmap=' + (document.getElementById('formHeatmap').checked ? '1' : '0') + '&rand=' + Date(), true);
-    xmlhttp.onreadystatechange = function () {
-        if (xmlhttp.readyState === 4 && xmlhttp.status === 200) {
-            document.getElementById('pngDiv').innerHTML = xmlhttp.responseText.replace(/_JAVASCRIPT_/, isJsOkay);
-            document.getElementById('webPageFrame').height = document.getElementById('pngDiv').offsetHeight;
-            document.getElementById('overflowDiv').height = document.getElementById('pngDiv').offsetHeight;
+    var url = scriptIndexPath + 'action=generate&group=' + selectedGroup + '&screen=' + screen + '&browser=' + selectedBrowser + '&date=' + requestedDate + '&range=' + currentRange + '&heatmap=' + (document.getElementById('formHeatmap').checked ? '1' : '0') + '&rand=' + Date();
+    heatmapGenerating = true;
+    $.get(
+        url,
+        {},
+        function (rs) {
+            $('#pngDiv').html(rs.replace(/_JAVASCRIPT_/, isJsOkay));
+            $('#webPageFrame').height($('#pngDiv').height());
+            $('#overflowDiv').height($('#pngDiv').height());
             changeAlpha(currentAlpha);
+            heatmapGenerating = false;
         }
-    };
-    xmlhttp.send(null);
-}
+    );
 
-/* Update calendar selected days */
-function updateCalendar(day) {
-    var min, max, week, d;
-    if (isPiwikModule === true) {
-        return;
-    }
-    /* currentDate[day, month, year, saved_day, month_origin, year_origin] */
-    if (day) {
-        currentDate[3] = day;
-    }
-    currentDate[1] = currentDate[4];
-    currentDate[2] = currentDate[5];
-    /* Showing one day */
-    if (currentRange === 'd') {
-        /* Remember the last day used */
-        currentDate[0] = currentDate[3];
-        min = currentDate[0];
-        max = currentDate[0];
-    }
-    /* Showing one month */
-    if (currentRange === 'm') {
-        currentDate[0] = 1;
-        min = 1;
-        max = weekDays.length;
-    }
-    /* Showing one week */
-    if (currentRange === 'w') {
-        /* Remember the last day used */
-        currentDate[0] = currentDate[3];
-        week = weekDays[currentDate[0]];
-        min = 0;
-        max = 0;
-        for (d = 1; d < weekDays.length; d += 1) {
-            if (weekDays[d] === week) {
-                if (min === 0) {
-                    currentDate[0] = d;
-                    min = d;
-                }
-                max = d;
-            }
-        }
-        /* Start was on the previous month */
-        if (min === 1 && max !== 7) {
-            currentDate[0] = lastDayOfMonth - 6 + max;
-            currentDate[1] -= 1;
-            if (currentDate[1] === 0) {
-                currentDate[1] = 12;
-                currentDate[2] -= 1;
-            }
-        }
-    }
-    for (d = 1; d < weekDays.length; d += 1) {
-        document.getElementById('clickheat-calendar-' + d).className = (d >= min && d <= max ? 'clickheat-calendar-on' : '');
-    }
-    for (d = 1; d < 7; d += 1) {
-        if (document.getElementById('clickheat-calendar-10' + d)) {
-            document.getElementById('clickheat-calendar-10' + d).className = (currentRange === 'w' && weekDays[min] === weekDays[1] ? 'clickheat-calendar-on' : '');
-        }
-        if (document.getElementById('clickheat-calendar-11' + d)) {
-            document.getElementById('clickheat-calendar-11' + d).className = (currentRange === 'w' && weekDays[max] === weekDays[weekDays.length - 1] ? 'clickheat-calendar-on' : '');
-        }
-    }
-    document.getElementById('clickheat-calendar-d').className = (currentRange === 'd' ? 'clickheat-calendar-on' : '');
-    document.getElementById('clickheat-calendar-w').className = (currentRange === 'w' ? 'clickheat-calendar-on' : '');
-    document.getElementById('clickheat-calendar-m').className = (currentRange === 'm' ? 'clickheat-calendar-on' : '');
-    updateHeatmap();
 }
-
 /* Ajax request to show group layout */
 function showGroupLayout() {
     $.get(
@@ -228,7 +147,7 @@ function updateJs() {
         str += 'clickHeatQuota = <span class="error">' + document.getElementById('jsQuota').value.replace(/[^0-9]*/g, '') + '</span>;' + addReturn;
     }
     /*jslint regexp: true*/
-    str += 'clickHeatServer = \'' + piwik.piwik_url  + 'index.php?module=ClickHeat&action=click\';' + addReturn;
+    str += 'clickHeatServer = \'' + piwik.piwik_url + 'index.php?module=ClickHeat&action=click\';' + addReturn;
     str += 'initClickHeat(); //--&gt;<br />';
     str += '&lt;/script&gt;';
     document.getElementById('clickheat-js').innerHTML = str;
@@ -242,7 +161,7 @@ function showJsCode() {
         function (rs) {
             var $layoutDiv = $('#layoutDiv');
             $layoutDiv.html(rs);
-            $layoutDiv.css({display: 'block'})
+            $layoutDiv.css({display: 'block'});
             updateJs();
         }
     );
@@ -270,7 +189,7 @@ function loadIframe() {
 function saveGroupLayout() {
     return false;
     // TODO: enable this feature
-    var i, xmlhttp;
+    var i;
     var selectedGroup = cleanInput($('#formGroup select:eq(0)').val());
     for (i = 0; i < 7; i += 1) {
         if (document.getElementById('layout-radio-' + i).checked) {
@@ -287,7 +206,7 @@ function saveGroupLayout() {
         {},
         function (rs) {
             if (rs == 'OK') {
-                alert(xmlhttp.responseText);
+                alert(rs);
             }
             hideGroupLayout();
             loadIframe();
@@ -406,7 +325,7 @@ function showLatestVersion() {
     $.get(
         scriptIndexPath + 'action=latest&rand=' + Date(),
         {},
-        function(rs) {
+        function (rs) {
             var $layoutDiv = $('#layoutDiv');
             $layoutDiv.html(rs);
             $layoutDiv.css({display: 'block'})
@@ -454,7 +373,6 @@ function adminCookie() {
 
 function applyChange() {
     resizeDiv();
-    updateHeatmap();
     loadIframe();
 }
 

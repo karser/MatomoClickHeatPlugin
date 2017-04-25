@@ -122,8 +122,12 @@ class Controller extends \Piwik\Plugin\Controller
         Piwik::checkUserIsNotAnonymous();
 
         /* Time and memory limits */
-        @set_time_limit(120);
-        @ini_set('memory_limit', Config::get('memory') . 'M');
+        if (Config::get('timeout', 0)) {
+            set_time_limit(Config::get('timeout'));
+        }
+        if (Config::get('memory')) {
+            ini_set('memory_limit', Config::get('memory') . 'M');
+        }
         /* Browser */
         $browser = $this->getBrowser();
         $screenInfo = $this->getScreenSize();
@@ -322,14 +326,13 @@ class Controller extends \Piwik\Plugin\Controller
         $obj->minScreen = $minScreen;
         $obj->maxScreen = $maxScreen;
         $obj->layout = ['', 0, 0, 0]; // not support change layout at this time
-        $obj->memory = Config::get('memory') * 1048576;
         $obj->step = Config::get('step');
         $obj->dot = Config::get('dot');
         $obj->palette = Config::get('palette');
         $obj->path = Config::get('cachePath');
         $obj->cache = Config::get('cachePath');
         $obj->file = $imagePath . '-%d.png';
-
+        $obj->memory = 128 * 1048576;
         return $obj;
     }
 
@@ -388,29 +391,30 @@ class Controller extends \Piwik\Plugin\Controller
      */
     private function getDate($requestDate, $requestRange)
     {
-        $range = in_array($requestRange, ['d', 'w', 'm']) ? $requestRange : 'd';
+        $requestRange = $requestRange[0];
+        $range = in_array($requestRange, ['d', 'w', 'm', 'r']) ? $requestRange : 'd';
         $date = explode(',', $requestDate);
-        if (count($date) == 2) {
-            $minDate = $date[0];
-            $maxDate = $date[1];
-        } else {
-            $minDate = $date[0];
-        }
+        $minDate = $date[0];
         switch ($range) {
             case 'd': {
                 $maxDate = $minDate;
-                $cacheTime = date('dmy', $minDate) !== date('dmy') ? 86400 : 120;
+                $cacheTime = date('dmy', strtotime($minDate)) !== date('dmy') ? 86400 : 120;
                 break;
             }
             case 'w': {
                 $maxDate = date('Y-m-d', strtotime($minDate . " +7 days"));
-                $cacheTime = date('Wy', $minDate) !== date('Wy') ? 86400 : 120;
+                $cacheTime = date('Wy', strtotime($minDate)) !== date('Wy') ? 86400 : 120;
                 break;
             }
             case 'm': {
-                $days = date('t', $minDate);
+                $days = date('t', strtotime($minDate));
                 $maxDate = date('Y-m-d', strtotime($minDate . " +{$days} days"));
-                $cacheTime = date('my', $minDate) !== date('my') ? 86400 : 120;
+                $cacheTime = date('my', strtotime($minDate)) !== date('my') ? 86400 : 120;
+                break;
+            }
+            case 'r': {
+                $maxDate = $date[1];
+                $cacheTime = date('my', strtotime($minDate)) !== date('my') ? 86400 : 120;
                 break;
             }
         }

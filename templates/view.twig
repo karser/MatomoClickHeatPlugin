@@ -53,7 +53,7 @@
                 {{ 'ClickHeat_LANG_HEATMAP' | translate }}
 			</div>
 			<div class="col m4">
-				<input type="checkbox" id="formHeatmap" name="heatmap"{{ clickheat_force_heatmap }} onchange="updateHeatmap();" /><span id="alphaSelector"></span>
+				<input type="checkbox" id="formHeatmap" name="heatmap"{{ clickheat_force_heatmap }} /><span id="alphaSelector"></span>
 			</div>
 		</div>
 	</form>
@@ -74,7 +74,7 @@ hideFlashes = {{ clickheat_flashes }};
 isPiwikModule = true;
 scriptPath = '{{ clickheat_host }}{{ clickheat_path }}';
 scriptIndexPath = '{{ clickheat_index | raw }}';
-currentDate = [{{ clickheat_day }}, {{ clickheat_month }}, {{ clickheat_year }}, {{ clickheat_day }}, {{ clickheat_month }}, {{ clickheat_year }}];
+requestedDate = '{{ clickheat_date }}';
 currentRange = '{{ clickheat_range }}';
 currentAlpha = {{ clickheat_alpha }};
 weekDays = new Array();
@@ -89,6 +89,5 @@ setTimeout(function () {
     loadIframe();
     /** Run cleaner */
     runCleaner();
-    updateHeatmap();
 }, 2000);
 </script>
