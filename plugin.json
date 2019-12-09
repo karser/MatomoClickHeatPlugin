@@ -1,8 +1,8 @@
 {
     "name": "ClickHeat",
-    "homepage": "https:\/\/github.com\/trungtnm\/clickheat",
+    "homepage": "https:\/\/github.com\/TrackMage\/MatomoClickHeatPlugin",
     "version": "1.0",
-    "description": "ClickHeat 3 is a visual heatmap of clicks on a HTML page for Piwik 3.x. This plugin based on Dugwood's ClickHeat version 1.14 and forked from PiwikJapan ClickHeat plugin, which is only compatible with Piwik 2x.",
+    "description": "ClickHeat 3 is a visual heatmap of clicks for Matomo / Piwik 3.x. This plugin based on Dugwood's ClickHeat version 1.14 and forked from Trung Tran's fork of PiwikJapan ClickHeat plugin.",
     "theme": true,
     "keywords": [
         "clickheat",
@@ -30,10 +30,15 @@
             "name": "Trung Tran",
             "email": "trungtran07@gmail.com",
             "homepage": "https:\/\/github.com\/trungtnm"
+        },
+        {
+            "name": "Dmitrii Poddubnyi",
+            "email": "dpoddubny@gmail.com",
+            "homepage": "https:\/\/github.com\/karser"
         }
     ],
     "support": {
-        "email": "trungtran07@gmail.com"
+        "email": "dpoddubny@gmail.com"
     },
     "stylesheet": "libs/styles/piwik.css",
     "javascript": ["libs/js/admin.js"]

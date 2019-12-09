@@ -11,7 +11,7 @@ class FileSystemLogger extends AbstractLogger
     /**
      * @var array
      */
-    protected $config = [
+    public static $config = [
         'logPath'  => '',
         'fileSize' => 0,
         'flush'    => 0
@@ -22,8 +22,8 @@ class FileSystemLogger extends AbstractLogger
      **/
     public function log($siteId, $groupName, $referrer, $browser, $screenSize, $posX, $posY)
     {
-        $logPath = $this->getConfig('logPath');
-        $fileSize = $this->getConfig('fileSize');
+        $logPath = self::get('logPath');
+        $fileSize = self::get('fileSize');
         $final = ltrim($siteId . ',' . $groupName, ',');
         /* Limit file size */
         $processingLog = $this->getLogFile($logPath . $final);
@@ -64,7 +64,7 @@ class FileSystemLogger extends AbstractLogger
 
     public function clean()
     {
-        $logDir = dir($this->getConfig('logPath') . '/');
+        $logDir = dir(self::get('logPath') . '/');
         $deletedFiles = 0;
         $deletedDirs = 0;
         while (($dir = $logDir->read()) !== false) {

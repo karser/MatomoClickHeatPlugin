@@ -21,7 +21,7 @@ abstract class AbstractLogger
      */
     public function __construct(array $configs)
     {
-        $this->initConfig($configs);
+        self::initConfig($configs);
     }
 
     /**

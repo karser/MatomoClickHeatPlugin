@@ -131,7 +131,7 @@ class Controller extends \Piwik\Plugin\Controller
         /* Browser */
         $browser = $this->getBrowser();
         $screenInfo = $this->getScreenSize();
-        if (is_null($screenInfo)) {
+        if ($screenInfo === null) {
             return $this->error(LANG_ERROR_SCREEN);
         }
         list($screen, $width, $minScreen, $maxScreen) = $screenInfo;
@@ -226,7 +226,24 @@ class Controller extends \Piwik\Plugin\Controller
     }
 
     /**
+     * @param string $refererHost
      * @return bool
+     */
+    private function checkReferrer($refererHost)
+    {
+        $siteUrls = API::getInstance()->getSiteUrlsFromId(Common::getRequestVar('s'));
+        foreach ($siteUrls as $siteUrl) {
+            $siteHost = parse_url($siteUrl, PHP_URL_HOST);
+            if (strtolower($siteHost) === strtolower($refererHost)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool|string
      */
     protected function isValidRequest()
     {
@@ -249,17 +266,15 @@ class Controller extends \Piwik\Plugin\Controller
                 return 'ClickHeat: No domain in referer';
             }
             try {
-                $site = API::getInstance()->getSiteFromId(Common::getRequestVar('s'));
-                $siteHost = parse_url($site);
-                $refererHost = parse_url($_SERVER['HTTP_REFERER']);
-                if (strtolower($siteHost['host']) != strtolower($refererHost['host'])) {
-                    return 'ClickHeat: Forbidden domain (' . $refererHost['host'] . '), change or remove security settings in the /config panel to allow this one';
+                $refererHost = parse_url($_SERVER['HTTP_REFERER'], PHP_URL_HOST);
+                if (!$this->checkReferrer($refererHost)) {
+                    return 'ClickHeat: Forbidden domain (' . $refererHost . '), change or remove security settings in the /config panel to allow this one';
                 }
             } catch (NoAccessException $e) {
                 // try to access site info and compare host name
             }
-
         }
+
         // check browser
         $browser = Helper::getBrowser(Common::getRequestVar('b'));
         if ($browser === '') {
@@ -351,21 +366,25 @@ class Controller extends \Piwik\Plugin\Controller
     }
 
     /**
-     * @return array|bool
+     * @return array|null
      */
     private function getScreenSize()
     {
         $screen = Common::getRequestVar('screen', 0);
-        $screenConfig = Config::get('__screenSizes');
+        if (!is_numeric($screen)) {
+            return null;
+        }
+        $screen = (int)$screen;
+        if ($screen === 0) {
+            return null;
+        }
         $minScreen = 0;
-        if ($screen < 0) {
-            $width = abs($screen);
-            $maxScreen = 3000;
-        } else {
-            $maxScreen = $screen;
-            if (!in_array($screen, $screenConfig) || $screen === 0) {
-                return false;
+        if ($screen >= 0) {
+            $screenConfig = Config::get('__screenSizes');
+            if (!in_array($screen, $screenConfig, true) || $screen === 0) {
+                return null;
             }
+            $maxScreen = $screen;
             for ($i = 1; $i < count($screenConfig); $i++) {
                 if ($screenConfig[$i] === $screen) {
                     $minScreen = $screenConfig[$i - 1];
@@ -373,6 +392,9 @@ class Controller extends \Piwik\Plugin\Controller
                 }
             }
             $width = $screen - 25;
+        } else {
+            $width = abs($screen);
+            $maxScreen = 3000;
         }
 
         return [

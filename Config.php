@@ -33,7 +33,7 @@ class Config
         ],
 
         // TODO: below configurations need to be refactored
-        'logger'         => 'Piwik\Plugins\ClickHeat\Logger\RedisLogger',
+        'logger'         => 'Piwik\Plugins\ClickHeat\Logger\MysqlLogger',
         'adapter'        => 'Piwik\Plugins\ClickHeat\Adapter\MysqlHeatmapAdapter',
         'logPath'        => '/tmp/cache/clickheat/logs/',
         'cachePath'      => '/tmp/cache/clickheat/cache/',

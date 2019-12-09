@@ -14,7 +14,7 @@ use Piwik\Plugins\ClickHeat\Model\MysqlModel;
 
 class MysqlLogger extends AbstractLogger
 {
-    protected $config = [
+    public static $config = [
         'flush'  => 0
     ];
     /**
@@ -24,8 +24,8 @@ class MysqlLogger extends AbstractLogger
      */
     public function __construct(array $configs)
     {
-        parent::initConfig($configs);
-        $this->model = StaticContainer::get('Piwik\Plugins\ClickHeat\Model\MysqlModel');
+        parent::__construct($configs);
+        $this->model = StaticContainer::get(MysqlModel::class);
     }
 
     /**
@@ -47,12 +47,12 @@ class MysqlLogger extends AbstractLogger
             $posY
         );
 
-        return boolval($newId);
+        return (bool)$newId;
     }
 
     public function clean()
     {
-        $this->model->cleanLogging($this->getConfig('flush'));
+        $this->model->cleanLogging(self::get('flush'));
     }
 
 }

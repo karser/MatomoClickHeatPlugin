@@ -64,7 +64,7 @@ function resizeDiv() {
     /** Width of main display */
     iW = iW < 300 ? 400 : iW;
     var selectedScreen = cleanInput($('#formScreen select:eq(0)').val());
-    if (selectedScreen == '0') {
+    if (selectedScreen === '0' || selectedScreen === '?') {
         currentWidth = iW;
     } else {
         currentWidth = selectedScreen - 5;
@@ -83,7 +83,7 @@ function updateHeatmap() {
     var selectedGroup = cleanInput($('#formGroup select:eq(0)').val());
     var selectedScreen = cleanInput($('#formScreen select:eq(0)').val());
     var selectedBrowser = cleanInput($('#formBrowser select:eq(0)').val());
-    if (selectedScreen === '0') {
+    if (selectedScreen === '0' || selectedScreen === '?') {
         screen = -1 * currentWidth + 25;
     } else {
         screen = selectedScreen;
@@ -340,8 +340,8 @@ function showPanel() {
         return true;
     }
     if (isPiwikModule === true) {
-        document.getElementById('topBars').style.display = 'block';
-        document.getElementById('header').style.display = 'block';
+        // document.getElementById('topBars').style.display = 'block';
+        // document.getElementById('header').style.display = 'block';
     }
     document.getElementById(div).style.display = 'block';
     document.getElementById('divPanel').innerHTML = '<img src="' + scriptPath + 'images/arrow-up.png" width="11" height="6" alt="" />';
@@ -351,8 +351,8 @@ function showPanel() {
 function hidePanel() {
     var div = (isPiwikModule === true ? 'contenu' : 'adminPanel');
     if (isPiwikModule === true) {
-        document.getElementById('topBars').style.display = 'none';
-        document.getElementById('header').style.display = 'none';
+        // document.getElementById('topBars').style.display = 'none';
+        // document.getElementById('header').style.display = 'none';
     }
     document.getElementById(div).style.display = 'none';
     document.getElementById('divPanel').innerHTML = '<img src="' + scriptPath + 'images/arrow-down.png" width="11" height="6" alt="" />';

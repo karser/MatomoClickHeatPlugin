@@ -1,25 +1,37 @@
 # Piwik ClickHeat Plugin
 
 ## Description
-ClickHeat is a visual heatmap of clicks on a HTML page, showing hot and cold click zones. This plugin based on [Dugwood's ClickHeat version 1.14](https://github.com/dugwood/clickheat). It is an OpenSource software, released under GPL licence, and free of charge. 
+ClickHeat 3 is a visual heatmap of clicks on a HTML page for Matomo/Piwik 3.x.
+This plugin based on [Dugwood's ClickHeat version 1.14](https://github.com/dugwood/clickheat)
+and forked from [Trung Tran's fork](https://github.com/trungtnm/plugin-clickheat)
+of [PiwikJapan ClickHeat plugin](https://github.com/piwikjapan/plugin-clickheat).
+It is an OpenSource software, released under GPL licence, and free of charge. 
 
 __Plugin not consider the IIS.__ Sorry. We are waiting patches for IIS.
 
 ## Installation
-   Not yet available in `Piwik Marketplace`, you have to copy the source code of this plugin to your `piwik/plugins` folder.
-   Since a weird issue, Piwik does not recognize this plugin, you have to manually add it to your Piwik `config.ini.php` as below:
+
+### Method 1: upload zip archive
+Run `make zip` and build the plugin file `MatomoClickHeatPlugin.zip`.
+Then open Matomo Settings / System / Plugins and upload the plugin file.
+
+### Method 2: copy the plugin folder
+You have to copy the source code of this plugin to your `piwik/plugins` folder.
+Since a weird issue, Piwik does not recognize this plugin, you have to manually add it to your Piwik `config.ini.php` as below:
 ```
 ...
 Plugins[] = ClickHeat
 ```
-  Then browse your Piwik `System > Plugins`, this plugin will be automatically installed.
+Then browse your Piwik `System > Plugins`, this plugin will be automatically installed.
+
 This plugin installer will make directories:
 * piwik/tmp/cache/clickheat/cache
 * piwik/tmp/cache/clickheat/logs.
 
 And these MySQL tables : `piwik_click_heat`, `piwik_click_heat_group`
 
-In case you want to use `Redis` as `Logger`, you need to install `predis/predis` via Composer to make this plugin works properly.
+The default logger is MysqlLogger. In case you want to use `Redis` as `Logger`,
+you need to install `predis/predis` via Composer to make this plugin works properly.
 ```
 composer require predis/predis
 ```
@@ -37,7 +49,7 @@ This plugin uses a different tracker. Please click on the link "JavaScript" in `
 ### Logger
 You can use different loggers to track clicks on webpage, currently supported:
 - `Piwik\Plugins\ClickHeat\Logger\FileSystemLogger` - store logging data in text files.
-- `Piwik\Plugins\ClickHeat\Logger\MySqlLogger` - store logging data in MySQL databases, tables needed for this logger will be created when you installed the plugin.
+- `Piwik\Plugins\ClickHeat\Logger\MysqlLogger` - store logging data in MySQL databases, tables needed for this logger will be created when you installed the plugin.
 - `Piwik\Plugins\ClickHeat\Logger\RedisLogger` - store logging data in Redis server.
 
 Currently `Redis` only used as a `Logger` and can not create heat map via it. So you need to run a command to import data to another `Adapter` like MySQL. 
