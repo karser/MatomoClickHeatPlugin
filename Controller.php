@@ -182,7 +182,9 @@ class Controller extends \Piwik\Plugin\Controller
         $f = fopen($htmlPath, 'w');
         fputs($f, $html);
         fclose($f);
-
+	    if(empty($html)) {
+		    return $this->error(Piwik::Translate('ClickHeat_LANG_ERROR_DATA'));
+	    }
         return $html;
     }
 
