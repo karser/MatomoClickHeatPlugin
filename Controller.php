@@ -132,8 +132,9 @@ class Controller extends \Piwik\Plugin\Controller
         $browser = $this->getBrowser();
         $screenInfo = $this->getScreenSize();
         if ($screenInfo === null) {
-            return $this->error(LANG_ERROR_SCREEN);
+            return $this->error(Piwik::Translate('ClickHeat_LANG_ERROR_SCREEN'));
         }
+
         list($screen, $width, $minScreen, $maxScreen) = $screenInfo;
         /* Selected Group */
         $group = str_replace('/', '', Common::getRequestVar('group'));
@@ -141,14 +142,24 @@ class Controller extends \Piwik\Plugin\Controller
         /* Date and days */
         $now = isset($_SERVER['REQUEST_TIME']) ? date('Y-m-d', $_SERVER['REQUEST_TIME']) : date('Y-m-d');
         $requestDate = Common::getRequestVar('date') ? Common::getRequestVar('date') : $now;
+
         $range = Common::getRequestVar('range');
         list($minDate, $maxDate, $cacheTime) = $this->getDate($requestDate, $range);
+	    //var_dump($minDate);
+	    //var_dump($maxDate);
+	    //var_dump($cacheTime);
         $imagePath = $group . '-' . $requestDate . '-' . $range . '-' . $screen . '-' . $browser . '-' . ($isRequestHeatMap === true ? 'heat' : 'click');
         $htmlPath = Config::get('cachePath') . $imagePath . '.html';
+        //var_dump($htmlPath);
         /* If images are already created, just stop script here if these have less than 120 seconds (today's log) or 86400 seconds (old logs) */
-        if (file_exists($htmlPath) && filemtime($htmlPath) > strtotime($now) - $cacheTime) {
-            return readfile($htmlPath);
+        if (file_exists($htmlPath) && (filemtime($htmlPath) > (strtotime($now) - $cacheTime))) {
+            $content = readfile($htmlPath);
+            if($content == 0) {
+	            return $this->error(Piwik::Translate('ClickHeat_LANG_ERROR_DATA'));
+            }
+            return true;
         }
+	    //die('here!');
         $target = new DrawingTarget([
             'groupId'   => $group,
             'browser'   => $browser,
