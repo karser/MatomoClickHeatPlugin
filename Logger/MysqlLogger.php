@@ -36,7 +36,7 @@ class MysqlLogger extends AbstractLogger
         $group = $this->model->getGroupByName($groupName, $siteId);
         if (!$group) {
             // create a new group
-            $group['id'] = $this->model->createGroup($groupName, $referrer, $siteId);
+            $group['id'] = $this->model->createGroup($groupName, $siteId, $referrer);
         }
         $newId = $this->model->addLog(
             $siteId,
