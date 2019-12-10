@@ -7,7 +7,7 @@ and forked from [Trung Tran's fork](https://github.com/trungtnm/plugin-clickheat
 of [PiwikJapan ClickHeat plugin](https://github.com/piwikjapan/plugin-clickheat).
 It is an OpenSource software, released under GPL licence, and free of charge. 
 
-__Plugin not consider the IIS.__ Sorry. We are waiting patches for IIS.
+![image](https://user-images.githubusercontent.com/1675033/70543449-15412000-1b73-11ea-9f1a-3b6a4b9399fd.png)
 
 ## Installation
 

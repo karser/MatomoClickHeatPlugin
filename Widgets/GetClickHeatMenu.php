@@ -73,17 +73,18 @@ class GetClickHeatMenu extends Widget
             return false;
         }
         /** Screen sizes */
-        $__selectScreens = '';
+        $__selectScreens = [];
         for ($i = 0; $i < count($conf['__screenSizes']); $i++) {
             $__selectScreens[$conf['__screenSizes'][$i]] = ($conf['__screenSizes'][$i] === 0 ? Piwik::Translate('ClickHeat_LANG_ALL') : $conf['__screenSizes'][$i] . 'px');
         }
 
         /** Browsers */
-        $__selectBrowsers = ['all' => Piwik::Translate('ClickHeat_LANG_ALL')];
+	    $__selectBrowsers = [];
         foreach ($conf['__browsersList'] as $label => $name) {
             $__selectBrowsers[$label] = $label === 'unknown' ? Piwik::Translate('ClickHeat_LANG_UNKNOWN') : $name;
         }
-
+	    $__selectBrowsers['all'] = Piwik::Translate('ClickHeat_LANG_ALL');
+        
         $groups = $this->adapter->getGroups($idSite);
 
         $view = new View('@ClickHeat/view');
