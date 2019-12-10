@@ -1,7 +1,7 @@
-# Piwik ClickHeat Plugin
+# Matomo / Piwik ClickHeat Plugin
 
 ## Description
-ClickHeat 3 is a visual heatmap of clicks on a HTML page for Matomo/Piwik 3.x.
+ClickHeat 3 is a visual heatmap of clicks on a HTML page for Matomo / Piwik 3.x.
 This plugin based on [Dugwood's ClickHeat version 1.14](https://github.com/dugwood/clickheat)
 and forked from [Trung Tran's fork](https://github.com/trungtnm/plugin-clickheat)
 of [PiwikJapan ClickHeat plugin](https://github.com/piwikjapan/plugin-clickheat).
@@ -13,7 +13,7 @@ It is an OpenSource software, released under GPL licence, and free of charge.
 
 ### Method 1: upload zip archive
 Run `make zip` and build the plugin file `MatomoClickHeatPlugin.zip`.
-Then open Matomo Settings / System / Plugins and upload the plugin file.
+Then open Matomo Settings / System / Plugins and upload the generated file. For some reason it is recognized as a theme.
 
 ### Method 2: copy the plugin folder
 You have to copy the source code of this plugin to your `piwik/plugins` folder.
