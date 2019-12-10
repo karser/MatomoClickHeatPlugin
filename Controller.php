@@ -145,12 +145,10 @@ class Controller extends \Piwik\Plugin\Controller
 
         $range = Common::getRequestVar('range');
         list($minDate, $maxDate, $cacheTime) = $this->getDate($requestDate, $range);
-	    //var_dump($minDate);
-	    //var_dump($maxDate);
-	    //var_dump($cacheTime);
+
         $imagePath = $group . '-' . $requestDate . '-' . $range . '-' . $screen . '-' . $browser . '-' . ($isRequestHeatMap === true ? 'heat' : 'click');
         $htmlPath = Config::get('cachePath') . $imagePath . '.html';
-        //var_dump($htmlPath);
+
         /* If images are already created, just stop script here if these have less than 120 seconds (today's log) or 86400 seconds (old logs) */
         if (file_exists($htmlPath) && (filemtime($htmlPath) > (strtotime($now) - $cacheTime))) {
             $content = readfile($htmlPath);
@@ -159,7 +157,7 @@ class Controller extends \Piwik\Plugin\Controller
             }
             return true;
         }
-	    //die('here!');
+
         $target = new DrawingTarget([
             'groupId'   => $group,
             'browser'   => $browser,
