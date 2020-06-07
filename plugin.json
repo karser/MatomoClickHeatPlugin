@@ -3,7 +3,6 @@
     "homepage": "https:\/\/github.com\/TrackMage\/MatomoClickHeatPlugin",
     "version": "1.0",
     "description": "ClickHeat 3 is a visual heatmap of clicks for Matomo / Piwik 3.x. This plugin based on Dugwood's ClickHeat version 1.14 and forked from Trung Tran's fork of PiwikJapan ClickHeat plugin.",
-    "theme": true,
     "keywords": [
         "clickheat",
         "heatmap",
